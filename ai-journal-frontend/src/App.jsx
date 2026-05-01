@@ -1,12 +1,23 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+// src/App.jsx
+import Navbar from "./components/layout/Navbar";
+import Footer from "./components/layout/Footer";
+import HeroSection from "./components/sections/HeroSection";
+import FeaturesSection from "./components/sections/FeaturesSection";
 
-function App() {
-  
-  
+export default function App() {
+  return (
+    <div className="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200 font-body relative overflow-x-hidden min-h-screen">
+      <div className="texture-overlay bg-paper-texture" />
+      <div className="fixed inset-0 bg-aura-gradient dark:bg-aura-gradient-dark pointer-events-none -z-10" />
+
+      <Navbar />
+
+      <main className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <HeroSection />
+        <FeaturesSection />
+      </main>
+
+      <Footer />
+    </div>
+  );
 }
-
-export default App
