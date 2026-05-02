@@ -5,12 +5,23 @@ import Footer from "./components/layout/Footer";
 import HeroSection from "./components/sections/HeroSection";
 import FeaturesSection from "./components/sections/FeaturesSection";
 import AuthPage from "./components/pages/AuthPage";
+import DashboardPage from "./components/pages/DashboardPage";
 
+// page: "landing" | "auth" | "dashboard"
 export default function App() {
-  const [page, setPage] = useState("landing"); // "landing" | "auth"
+  const [page, setPage] = useState("dashboard");
 
   if (page === "auth") {
-    return <AuthPage onBack={() => setPage("landing")} />;
+    return (
+      <AuthPage
+        onBack={() => setPage("landing")}
+        onSuccess={() => setPage("dashboard")}
+      />
+    );
+  }
+
+  if (page === "dashboard") {
+    return <DashboardPage />;
   }
 
   return (
