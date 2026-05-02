@@ -1,8 +1,8 @@
 // src/pages/DashboardPage.jsx
-import StreakCard from "../dashboard/StreakCard";
-import EnergyFlowCard from "../dashboard/EnergyFlowCard";
-import RecentEntryCard from "../dashboard/RecentEntryCard";
-import BottomNav from "../layout/BottomNav";
+import StreakCard from "../components/dashboard/StreakCard";
+import EnergyFlowCard from "../components/dashboard/EnergyFlowCard";
+import RecentEntryCard from "../components/dashboard/RecentEntryCard";
+import BottomNav from "../components/layout/BottomNav";
 
 const RECENT_ENTRIES = [
   {
@@ -21,14 +21,13 @@ const RECENT_ENTRIES = [
   },
 ];
 
-export default function DashboardPage() {
+export default function DashboardPage( {onNavigate} ) {
   return (
-    <div className="bg-background text-on-background font-body-md min-h-screen relative overflow-x-hidden pb-[120px]">
+    <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-[120px]">
 
       {/* Ambient gradients — mirrors the HTML prototype */}
-      <div className="fixed top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-primary-fixed opacity-30 blur-[100px] pointer-events-none -z-10" />
-      <div className="fixed bottom-[-10%] left-[-20%] w-[50%] h-[50%] rounded-full bg-secondary-fixed opacity-20 blur-[80px] pointer-events-none -z-10" />
-      <div className="fixed inset-0 bg-grain pointer-events-none -z-10" />
+      <div className="aura-top-right" />
+      <div className="aura-bottom-left" />
 
       {/* Top App Bar — Desktop */}
       <header className="hidden md:flex justify-between items-center w-full px-8 py-6 bg-transparent text-primary font-label-caps tracking-widest uppercase text-xs z-40 relative">
@@ -89,7 +88,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <BottomNav />
+      <BottomNav activePage="home" onNavigate={onNavigate} />
     </div>
   );
 }

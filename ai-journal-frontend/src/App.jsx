@@ -4,12 +4,18 @@ import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import HeroSection from "./components/sections/HeroSection";
 import FeaturesSection from "./components/sections/FeaturesSection";
-import AuthPage from "./components/pages/AuthPage";
-import DashboardPage from "./components/pages/DashboardPage";
+import AuthPage from "./pages/AuthPage";
+import DashboardPage from "./pages/DashboardPage";
+import HistoryPage from "./pages/HistoryPage";
 
-// page: "landing" | "auth" | "dashboard"
+// page: "landing" | "auth" | "dashboard" | "history"
 export default function App() {
   const [page, setPage] = useState("dashboard");
+
+  const navigate = (id) => {
+    const map = { home: "dashboard", history: "history" };
+    if (map[id]) setPage(map[id]);
+  };
 
   if (page === "auth") {
     return (
@@ -21,7 +27,11 @@ export default function App() {
   }
 
   if (page === "dashboard") {
-    return <DashboardPage />;
+    return <DashboardPage onNavigate={navigate} />;
+  }
+
+  if (page === "history") {
+    return <HistoryPage onNavigate={navigate} />;
   }
 
   return (
