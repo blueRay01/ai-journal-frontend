@@ -4,7 +4,7 @@ const NAV_ITEMS = [
   { icon: "home",       label: "Home",     id: "home"    },
   { icon: "add_circle", label: "Check-in", id: "checkin" },
   { icon: "history",    label: "History",  id: "history" },
-  { icon: "analytics",  label: "Report",   id: "report"  },
+  { icon: "assessment", label: "Report",   id: "report"  },
 ];
 
 /**
