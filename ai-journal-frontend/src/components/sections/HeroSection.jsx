@@ -6,7 +6,7 @@ const TRUSTED_USERS = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAyb-LTsNmQoNXejBooCGvyCiVjX5Yt_fNT02GgkoZMud_weErgfDEThQq-nPOWekgOuUDSx7bm5VL7CIX2127fNyPcdn-luTvJf3mWiG1dIV5sd-i5uMSqaGSvE6QPXpAVWGYPlowyEilHp5vCN8wuWqCSHcSDk35FtHU-rFJT2xgX2UEXKQH2T-TcJhuqIv2iQg2O4wESonu7gW9biZUh8WWlqXzdNbVxiLC5E20YskcUidjk0PPKd8_3izYi6h1NGG2NELgnoT8",
 ];
 
-export default function HeroSection() {
+export default function HeroSection({ onBeginWriting }) {
   return (
     <section className="relative min-h-[819px] flex flex-col items-center justify-center pt-10 pb-20">
 
@@ -38,7 +38,10 @@ export default function HeroSection() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-primary/30 flex items-center gap-2 w-full sm:w-auto justify-center">
+            <button
+              onClick={onBeginWriting}
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-primary/30 flex items-center gap-2 w-full sm:w-auto justify-center"
+            >
               Begin Writing
               <span className="material-icons">east</span>
             </button>
@@ -51,20 +54,13 @@ export default function HeroSection() {
           <div className="mt-12 flex items-center justify-center gap-4 text-sm text-stone-600 dark:text-stone-400">
             <div className="flex -space-x-2">
               {TRUSTED_USERS.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt="User"
-                  className="w-8 h-8 rounded-full border-2 border-white dark:border-stone-800"
-                />
+                <img key={i} src={src} alt="User" className="w-8 h-8 rounded-full border-2 border-white dark:border-stone-800" />
               ))}
               <div className="w-8 h-8 rounded-full border-2 border-white dark:border-stone-800 bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-xs font-bold text-stone-600 dark:text-stone-300">
                 +
               </div>
             </div>
-            <span>
-              Trusted by <strong>50,000+</strong> mindful thinkers
-            </span>
+            <span>Trusted by <strong>50,000+</strong> mindful thinkers</span>
           </div>
         </div>
       </div>

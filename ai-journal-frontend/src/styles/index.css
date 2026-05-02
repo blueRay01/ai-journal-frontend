@@ -1,8 +1,7 @@
-/* ✅ ALL imports first, together */
 @import "tailwindcss";
 
-/* THEN @theme */
 @theme {
+  /* === Landing Page Tokens === */
   --color-primary: #3d6846;
   --color-secondary: #685d48;
   --color-background-light: #F3E4C9;
@@ -17,9 +16,52 @@
   --shadow-paper-dark: 0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2);
   --shadow-floating: 0 20px 40px -10px rgba(0,0,0,0.08);
   --shadow-floating-dark: 0 20px 40px -10px rgba(0,0,0,0.5);
+
+  /* === Auth Page Tokens === */
+  --color-on-secondary-container: #5a6745;
+  --color-primary-container: #6b7a5f;
+  --color-on-primary-container: #fdfff4;
+  --color-surface-tint: #546349;
+  --color-secondary-container: #d7e5bb;
+  --color-surface-container-high: #eae8e4;
+  --color-background: #fbf9f5;
+  --color-outline: #75786f;
+  --color-on-surface: #1b1c1a;
+  --color-inverse-surface: #30312e;
+  --color-inverse-on-surface: #f3f0ec;
+  --color-on-secondary: #ffffff;
+  --color-surface-variant: #e4e2de;
+  --color-surface-dim: #dcdad6;
+  --color-surface-bright: #fbf9f5;
+  --color-primary-fixed: #d7e8c7;
+  --color-on-primary: #ffffff;
+  --color-on-background: #1b1c1a;
+  --color-tertiary: #725562;
+  --color-on-tertiary: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-error: #ffffff;
+  --color-surface: #fbf9f5;
+  --color-on-surface-variant: #444840;
+  --color-inverse-primary: #bcccac;
+  --color-outline-variant: #c5c8bd;
+  --color-surface-container-low: #f5f3ef;
+  --color-surface-container: #f0eeea;
+  --color-surface-container-high: #eae8e4;
+  --color-surface-container-highest: #e4e2de;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* Auth font sizes */
+  --font-size-h1: 40px;
+  --font-size-h2: 32px;
+  --font-size-h3: 24px;
+  --font-size-body-lg: 18px;
+  --font-size-body-md: 16px;
+  --font-size-label-caps: 12px;
 }
 
-/* THEN custom classes */
+/* Landing page custom classes */
 .texture-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -34,4 +76,12 @@
 }
 .folder-tab {
   clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+/* Auth page custom classes */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+}
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
