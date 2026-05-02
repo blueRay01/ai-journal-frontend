@@ -6,7 +6,7 @@ import FeaturesSection from "./components/sections/FeaturesSection";
 
 export default function App() {
   return (
-    <div className="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200 font-body relative overflow-x-hidden min-h-screen">
+    <div className="bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-200 font-body relative overflow-x-hidden min-h-screen">
       <div className="texture-overlay bg-paper-texture" />
       <div className="fixed inset-0 bg-aura-gradient dark:bg-aura-gradient-dark pointer-events-none -z-10" />
 

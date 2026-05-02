@@ -17,7 +17,7 @@ export default function HeroSection() {
         <div className="absolute -top-6 left-12 w-48 h-12 bg-secondary/20 dark:bg-secondary/10 rounded-t-xl folder-tab z-0" />
         <div className="absolute -top-4 left-32 w-56 h-12 bg-primary/20 dark:bg-primary/10 rounded-t-xl folder-tab z-0" />
 
-        <div className="bg-surface-light dark:bg-surface-dark rounded-3xl p-10 md:p-16 shadow-floating dark:shadow-floating-dark border border-gray-100 dark:border-gray-800 relative z-10 text-center overflow-hidden">
+        <div className="bg-surface-light dark:bg-surface-dark rounded-3xl p-10 md:p-16 shadow-floating dark:shadow-floating-dark border border-secondary/20 dark:border-secondary/40 relative z-10 text-center overflow-hidden">
 
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
@@ -26,12 +26,12 @@ export default function HeroSection() {
           </div>
 
           {/* Headline */}
-          <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight mb-6 text-gray-900 dark:text-white leading-tight">
+          <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight mb-6 text-stone-900 dark:text-white leading-tight">
             The journal that <br />
             <span className="italic text-primary">learns you.</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-stone-600 dark:text-stone-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             Aura combines mindful reflection with gentle AI recognition to help you uncover
             patterns in your thoughts, moods, and habits.
           </p>
@@ -42,23 +42,23 @@ export default function HeroSection() {
               Begin Writing
               <span className="material-icons">east</span>
             </button>
-            <button className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all w-full sm:w-auto justify-center">
+            <button className="bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-900 dark:text-white border border-secondary/30 dark:border-secondary/50 px-8 py-4 rounded-xl font-semibold text-lg transition-all w-full sm:w-auto justify-center">
               View Demo
             </button>
           </div>
 
           {/* Social proof */}
-          <div className="mt-12 flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="mt-12 flex items-center justify-center gap-4 text-sm text-stone-600 dark:text-stone-400">
             <div className="flex -space-x-2">
               {TRUSTED_USERS.map((src, i) => (
                 <img
                   key={i}
                   src={src}
                   alt="User"
-                  className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800"
+                  className="w-8 h-8 rounded-full border-2 border-white dark:border-stone-800"
                 />
               ))}
-              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+              <div className="w-8 h-8 rounded-full border-2 border-white dark:border-stone-800 bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-xs font-bold text-stone-600 dark:text-stone-300">
                 +
               </div>
             </div>
@@ -70,16 +70,16 @@ export default function HeroSection() {
       </div>
 
       {/* Decorative floating cards */}
-      <div className="absolute top-1/4 left-0 w-32 h-40 bg-white dark:bg-gray-800 shadow-paper dark:shadow-paper-dark rounded-lg rotate-[-12deg] -z-10 p-4 border border-gray-100 dark:border-gray-700 hidden lg:block opacity-70">
-        <div className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded mb-2" />
-        <div className="w-3/4 h-2 bg-gray-200 dark:bg-gray-600 rounded mb-4" />
+      <div className="absolute top-1/4 left-0 w-32 h-40 bg-white dark:bg-stone-800 shadow-paper dark:shadow-paper-dark rounded-lg rotate-[-12deg] -z-10 p-4 border border-secondary/20 dark:border-secondary/40 hidden lg:block opacity-70">
+        <div className="w-full h-2 bg-stone-200 dark:bg-stone-600 rounded mb-2" />
+        <div className="w-3/4 h-2 bg-stone-200 dark:bg-stone-600 rounded mb-4" />
         <div className="w-full h-16 bg-secondary/20 rounded" />
       </div>
 
-      <div className="absolute bottom-1/4 right-0 w-48 h-32 bg-white dark:bg-gray-800 shadow-paper dark:shadow-paper-dark rounded-xl rotate-[8deg] -z-10 p-4 border border-gray-100 dark:border-gray-700 hidden lg:block opacity-70">
+      <div className="absolute bottom-1/4 right-0 w-48 h-32 bg-white dark:bg-stone-800 shadow-paper dark:shadow-paper-dark rounded-xl rotate-[8deg] -z-10 p-4 border border-secondary/20 dark:border-secondary/40 hidden lg:block opacity-70">
         <div className="flex items-center gap-2 mb-2">
           <span className="material-icons text-primary">mood</span>
-          <div className="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded" />
+          <div className="w-16 h-2 bg-stone-200 dark:bg-stone-600 rounded" />
         </div>
         <div className="flex justify-between items-end mt-2">
           <div className="w-6 h-12 bg-primary/40 rounded-t" />
