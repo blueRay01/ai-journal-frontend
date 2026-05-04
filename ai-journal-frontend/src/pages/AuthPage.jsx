@@ -1,5 +1,6 @@
 // src/pages/AuthPage.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function EmailField() {
   return (
@@ -69,6 +70,7 @@ function PasswordField({ showForgot }) {
 
 export default function AuthPage() {
   const [tab, setTab] = useState("login");
+  const navigate = useNavigate();
 
   return (
     <div className="bg-background min-h-screen flex items-center justify-center relative overflow-hidden font-body text-on-background px-4">
@@ -94,7 +96,7 @@ export default function AuthPage() {
         <div className="bg-white/40 backdrop-blur-3xl rounded-2xl border border-white/60 shadow-[0_40px_80px_-20px_rgba(83,97,72,0.1)] p-6 sm:p-8 relative overflow-hidden">
 
           {/* Inner gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent pointer-events-none" />
 
           <div className="relative z-10">
 
@@ -155,6 +157,7 @@ export default function AuthPage() {
               {/* Submit */}
               <button
                 type="button"
+                onClick={() => navigate('/dashboard')}
                 className="w-full bg-primary hover:bg-on-secondary-container text-on-primary font-semibold py-4 rounded-full transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(83,97,72,0.4)] hover:shadow-[0_15px_25px_-10px_rgba(83,97,72,0.5)] flex items-center justify-center gap-2 group mt-2"
               >
                 {tab === "login" ? "Continue to Journal" : "Create Account"}

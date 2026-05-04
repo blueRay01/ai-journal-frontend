@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import HeroSection from "./components/sections/HeroSection";
@@ -7,57 +7,39 @@ import FeaturesSection from "./components/sections/FeaturesSection";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import HistoryPage from "./pages/HistoryPage";
-
 import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 
-// page: "landing" | "auth" | "dashboard" | "history" | "report" | "checkin"
-export default function App() {
-  const [page, setPage] = useState("dashboard");
-
-  const navigate = (id) => {
-    const map = { home: "dashboard", history: "history", report: "report", checkin: "checkin" };
-    if (map[id]) setPage(map[id]);
-  };
-
-  if (page === "auth") {
-    return (
-      <AuthPage
-        onBack={() => setPage("landing")}
-        onSuccess={() => setPage("dashboard")}
-      />
-    );
-  }
-
-  if (page === "dashboard") {
-    return <DashboardPage onNavigate={navigate} />;
-  }
-
-  if (page === "history") {
-    return <HistoryPage onNavigate={navigate} />;
-  }
-
-  if (page === "report") {
-    return <ReportPage onNavigate={navigate} />;
-  }
-
-  if (page === "checkin") {
-    return <CheckInPage onNavigate={navigate} />;
-  }
-
+function LandingPage() {
   return (
     <div className="bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-200 font-body relative overflow-x-hidden min-h-screen">
       <div className="texture-overlay bg-paper-texture" />
       <div className="fixed inset-0 bg-aura-gradient dark:bg-aura-gradient-dark pointer-events-none -z-10" />
 
-      <Navbar onSignIn={() => setPage("auth")} />
+      <Navbar />
 
       <main className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <HeroSection onBeginWriting={() => setPage("auth")} />
+        <HeroSection />
         <FeaturesSection />
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/report" element={<ReportPage />} />
+        <Route path="/checkin" element={<CheckInPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }

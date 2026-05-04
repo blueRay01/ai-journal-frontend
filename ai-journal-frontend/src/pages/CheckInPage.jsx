@@ -1,4 +1,5 @@
 // src/pages/CheckInPage.jsx
+import { useNavigate } from "react-router-dom";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import BottomNav from "../components/layout/BottomNav";
 import ExerciseToggle from "../components/checkin/ExerciseToggle";
@@ -6,7 +7,8 @@ import SliderField from "../components/checkin/SliderField";
 import WinsTextArea from "../components/checkin/WinsTextArea";
 import { useState } from "react";
 
-export default function CheckInPage({ onNavigate }) {
+export default function CheckInPage() {
+    const navigate = useNavigate();
     const [winsText, setWinsText] = useState("");
     const hasText = winsText.trim().length > 0;
   return (
@@ -99,7 +101,7 @@ export default function CheckInPage({ onNavigate }) {
         </div>
       </main>
 
-      <BottomNav activePage="checkin" onNavigate={onNavigate} />
+      <BottomNav activePage="checkin" onNavigate={navigate} />
     </div>
   );
 }

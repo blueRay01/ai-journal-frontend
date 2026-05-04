@@ -1,4 +1,5 @@
 // src/pages/ReportPage.jsx
+import { useNavigate } from "react-router-dom";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import BottomNav from "../components/layout/BottomNav";
 import StreakRingCard from "../components/report/StreakRingCard";
@@ -7,7 +8,8 @@ import HighFrictionCard from "../components/report/HighFrictionCard";
 import CorrelationCard from "../components/report/CorrelationCard";
 import FocusCard from "../components/report/FocusCard";
 
-export default function ReportPage({ onNavigate }) {
+export default function ReportPage() {
+  const navigate = useNavigate();
   return (
     <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-32 antialiased">
 
@@ -48,7 +50,7 @@ export default function ReportPage({ onNavigate }) {
         <FocusCard />
       </main>
 
-      <BottomNav activePage="report" onNavigate={onNavigate} />
+      <BottomNav activePage="report" onNavigate={navigate} />
     </div>
   );
 }
