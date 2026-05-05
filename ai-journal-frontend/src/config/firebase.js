@@ -1,18 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
-// Replace these dummy values with the keys your classmate gives you!
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCH4RwanFNrbNSIxAPzhNKg6ZTJHGN0BmQ",
+  authDomain: "aura-journal-845eb.firebaseapp.com",
+  projectId: "aura-journal-845eb",
+  storageBucket: "aura-journal-845eb.firebasestorage.app",
+  messagingSenderId: "564242605861",
+  appId: "1:564242605861:web:9637d4b371a066fbaedccc"
 };
 
-// Initialize the Firebase connection
 const app = initializeApp(firebaseConfig);
 
-// Export the auth service so your AuthContext can use it
 export const auth = getAuth(app);
