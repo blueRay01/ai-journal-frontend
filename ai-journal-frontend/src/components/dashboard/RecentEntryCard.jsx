@@ -37,10 +37,7 @@ export default function RecentEntryCard({
         </h4>
       </div>
 
-      {/* Chevron */}
-      <div className="ml-auto">
-        <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>
-      </div>
+      
     </div>
   );
 }

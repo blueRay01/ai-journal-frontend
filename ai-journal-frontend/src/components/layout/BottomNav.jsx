@@ -3,8 +3,9 @@
 const NAV_ITEMS = [
   { icon: "home",       label: "Home",     id: "home",    route: "/dashboard" },
   { icon: "add_circle", label: "Check-in", id: "checkin", route: "/checkin" },
+  { icon: "auto_awesome", label: "Insights", id: "insights", route: "/insights" },
   { icon: "history",    label: "History",  id: "history", route: "/history" },
-  { icon: "assessment", label: "Report",   id: "report",  route: "/report"  },
+  { icon: "analytics",  label: "Report",   id: "report",  route: "/report"  },
 ];
 
 /**

@@ -1,99 +1,424 @@
 // src/pages/CheckInPage.jsx
 import { useNavigate } from "react-router-dom";
-import DashboardHeader from "../components/layout/DashboardHeader";
 import BottomNav from "../components/layout/BottomNav";
-import ExerciseToggle from "../components/checkin/ExerciseToggle";
-import SliderField from "../components/checkin/SliderField";
-import WinsTextArea from "../components/checkin/WinsTextArea";
 import { useState } from "react";
+
+// Add styles
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+
+  .handwritten-text {
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  @keyframes handwritten-check {
+    0% {
+      stroke-dasharray: 0 100;
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      stroke-dasharray: 100 0;
+      opacity: 1;
+    }
+  }
+
+  .animate-handwritten-check path:first-child {
+    animation: handwritten-check 0.3s ease-in-out;
+  }
+
+  .animate-handwritten-check path:last-child {
+    animation: handwritten-check 0.3s ease-in-out 0.1s both;
+  }
+
+  .exercise-checkbox:checked + label {
+    background-color: rgba(39, 68, 47, 0.1);
+    border-color: #27442f;
+  }
+
+  .aura-tl {
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, rgba(173,207,178,0.3) 0%, rgba(250,243,225,0) 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .aura-br {
+    position: fixed;
+    bottom: -10%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(204,190,250,0.2) 0%, rgba(250,243,225,0) 70%);
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .book-page-under-1 {
+    position: absolute;
+    inset: 0;
+    background: #FDFAF6;
+    border-radius: 1rem;
+    transform: rotate(-1deg) scale(0.99) translateY(4px) translateX(-2px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    z-index: -1;
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+  
+  .book-page-under-2 {
+    position: absolute;
+    inset: 0;
+    background: #FDFAF6;
+    border-radius: 1rem;
+    transform: rotate(1.5deg) scale(0.98) translateY(8px) translateX(2px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+    z-index: -2;
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+  
+  .book-page-under-3 {
+    position: absolute;
+    inset: 0;
+    background: #FDFAF6;
+    border-radius: 1rem;
+    transform: rotate(-0.5deg) scale(0.97) translateY(14px);
+    box-shadow: 0 40px 80px -10px rgba(0,0,0,0.25);
+    z-index: -3;
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+
+  .glass-input:focus-within {
+    box-shadow: 0 0 0 4px rgba(209, 196, 255, 0.3);
+    border-color: rgba(98, 87, 139, 0.3);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    background: #27442f;
+    cursor: pointer;
+    margin-top: -10px;
+    box-shadow: 0 2px 8px rgba(39,68,47,0.4);
+    border: 2px solid #ffffff;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    cursor: pointer;
+    background: #e5e2de;
+    border-radius: 3px;
+    border: 1px solid #c2c8c0;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    background: #27442f;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(39,68,47,0.4);
+  }
+
+  input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 6px;
+    background: #e5e2de;
+    border-radius: 3px;
+    border: 1px solid #c2c8c0;
+  }
+
+  .toggle-checkbox {
+    position: absolute;
+    display: none;
+  }
+
+  .toggle-label {
+    display: block;
+    width: 56px;
+    height: 32px;
+    background: #dcdad6;
+    border-radius: 16px;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.3s;
+  }
+
+  .toggle-label::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .toggle-checkbox:checked + .toggle-label {
+    background-color: #27442f;
+  }
+
+  .toggle-checkbox:checked + .toggle-label::after {
+    transform: translateX(24px);
+  }
+`;
 
 export default function CheckInPage() {
     const navigate = useNavigate();
+    const [exerciseChecked, setExerciseChecked] = useState(false);
+    const [sleepQuality, setSleepQuality] = useState(4);
+    const [mood, setMood] = useState(3);
+    const [stressLevel, setStressLevel] = useState(2);
     const [winsText, setWinsText] = useState("");
-    const hasText = winsText.trim().length > 0;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Handle form submission
+        console.log('Check-in submitted:', {
+            exerciseChecked,
+            sleepQuality,
+            mood,
+            stressLevel,
+            winsText
+        });
+        // Navigate to insights after submission
+        navigate('/insights');
+    };
+
   return (
-    <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-40">
+    <>
+      <style>{styles}</style>
+      <div className="text-on-surface font-body-md relative overflow-x-hidden pb-40" style={{ backgroundColor: '#FAF3E1', backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.08\'/%3E%3C/svg%3E")' }}>
 
-      {/* Background — unified with all other pages */}
-      <div className="aura-top-right" />
-      <div className="aura-bottom-left" />
+        {/* Atmospheric Auras */}
+        <div className="aura-tl"></div>
+        <div className="aura-br"></div>
 
-      <DashboardHeader />
+      {/* TopAppBar */}
+      <header className="flex justify-between items-center w-full px-8 py-6 bg-transparent docked full-width top-0 z-40 relative">
+        <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100 tracking-tight drop-shadow-sm">Aura Journal</div>
+        <div className="flex items-center gap-4">
+          <button className="text-emerald-900 dark:text-emerald-400 hover:opacity-70 transition-opacity ease-in-out duration-300 drop-shadow-sm">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>settings</span>
+          </button>
+          <button className="text-emerald-900 dark:text-emerald-400 hover:opacity-70 transition-opacity ease-in-out duration-300 drop-shadow-sm">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>account_circle</span>
+          </button>
+        </div>
+      </header>
 
       <main className="max-w-[1000px] mx-auto px-4 md:px-8 mt-4 md:mt-12">
 
-        {/* Page heading */}
-        <div className="mb-16 text-center">
-          <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">
-            Daily Check-in
-          </h1>
-          <p className="text-[18px] text-on-surface-variant leading-relaxed">
-            Take a moment to reflect on your day.
-          </p>
-          <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-fixed/50 text-on-secondary-container text-[13px] font-medium border border-secondary-fixed-dim/30 shadow-sm">
+        {/* Header */}
+        <div className="mb-16 text-center drop-shadow-md">
+          <h1 className="font-display text-display text-primary mb-2">Daily Check-in</h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant">Take a moment to reflect on your day.</p>
+          <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-fixed/50 text-on-secondary-container font-label-sm text-label-sm border border-secondary-fixed-dim/30 shadow-sm">
             <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
             October 24, 2023
           </div>
         </div>
 
-        {/* Open book frame */}
-        <div className="relative w-full max-w-4xl mx-auto z-10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.2)]">
-
-          {/* Stacked pages underneath */}
-          <div className="book-page-under-3" />
-          <div className="book-page-under-2" />
-          <div className="book-page-under-1" />
-
-          {/* Book binding line */}
-          <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-outline-variant/10 via-outline-variant/40 to-outline-variant/10 hidden md:block z-20 shadow-inner" />
-
+        {/* Open Journal Book Frame */}
+        <div className="relative w-full max-w-4xl mx-auto z-10">
+          {/* Book Pages Underneath */}
+          <div className="book-page-under-3"></div>
+          <div className="book-page-under-2"></div>
+          <div className="book-page-under-1"></div>
+          {/* Book binding aesthetic line */}
+          <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-outline-variant/10 via-outline-variant/40 to-outline-variant/10 hidden md:block z-20 shadow-inner"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
 
-            {/* Left page */}
-            <div className="glass-panel rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]">
+            {/* Left Page */}
+            <div className="glass-panel rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]" style={{ background: 'rgba(253, 250, 246, 1)', border: '1px solid rgba(255, 255, 255, 0.9)', boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)' }}>
               <div className="space-y-10">
-                <ExerciseToggle />
-                <SliderField
-                  icon="bedtime"
-                  label="Sleep Quality"
-                  badge="REST"
-                  defaultVal={4}
-                  markers={["Poor", "Fair", "Good", "Great", "Excellent"]}
-                />
-                <SliderField
-                  icon="mood"
-                  label="Mood"
-                  badge="FEELING"
-                  defaultVal={3}
-                  markers={["Low", "Okay", "Neutral", "Good", "High"]}
-                />
+                {/* Exercise Section */}
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-6">
+                  <div>
+                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
+                      <span className="material-symbols-outlined">fitness_center</span> Exercise
+                    </h3>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Did you move your body today?</p>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type="checkbox"
+                      id="exercise-checkbox"
+                      className="exercise-checkbox sr-only"
+                      checked={exerciseChecked}
+                      onChange={(e) => setExerciseChecked(e.target.checked)}
+                    />
+                    <label
+                      htmlFor="exercise-checkbox"
+                      className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/70"
+                    >
+                      {exerciseChecked && (
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className="text-primary animate-handwritten-check"
+                        >
+                          {/* First stroke of the checkmark */}
+                          <path
+                            d="M5 12L9 16"
+                            stroke="#27442f"
+                            strokeWidth="2.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeDasharray="100"
+                            strokeDashoffset="0"
+                          />
+                          {/* Second stroke of the checkmark - overlapping */}
+                          <path
+                            d="M8.5 16L19 5"
+                            stroke="#27442f"
+                            strokeWidth="2.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeDasharray="100"
+                            strokeDashoffset="0"
+                          />
+                        </svg>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Sleep Quality Slider */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
+                      <span className="material-symbols-outlined">bedtime</span> Sleep Quality
+                    </h3>
+                    <span className="font-label-caps text-label-caps text-on-surface-variant bg-surface px-2 py-1 rounded shadow-sm">REST</span>
+                  </div>
+                  <div className="px-2 pt-4">
+                    <input 
+                      className="w-full drop-shadow-sm" 
+                      max="5" 
+                      min="1" 
+                      type="range" 
+                      value={sleepQuality}
+                      onChange={(e) => setSleepQuality(parseInt(e.target.value))}
+                    />
+                    <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-3 px-1">
+                      <span>Poor</span>
+                      <span>Fair</span>
+                      <span>Good</span>
+                      <span>Great</span>
+                      <span>Excellent</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mood Slider */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
+                      <span className="material-symbols-outlined">mood</span> Mood
+                    </h3>
+                    <span className="font-label-caps text-label-caps text-on-surface-variant bg-surface px-2 py-1 rounded shadow-sm">FEELING</span>
+                  </div>
+                  <div className="px-2 pt-4">
+                    <input 
+                      className="w-full drop-shadow-sm" 
+                      max="5" 
+                      min="1" 
+                      type="range" 
+                      value={mood}
+                      onChange={(e) => setMood(parseInt(e.target.value))}
+                    />
+                    <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-3 px-1">
+                      <span>Low</span>
+                      <span>Okay</span>
+                      <span>Neutral</span>
+                      <span>Good</span>
+                      <span>High</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stress Level Slider */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
+                      <span className="material-symbols-outlined">waves</span> Stress Level
+                    </h3>
+                  </div>
+                  <div className="px-2 pt-4">
+                    <input 
+                      className="w-full drop-shadow-sm" 
+                      max="5" 
+                      min="1" 
+                      type="range" 
+                      value={stressLevel}
+                      onChange={(e) => setStressLevel(parseInt(e.target.value))}
+                    />
+                    <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-3 px-1">
+                      <span>Calm</span>
+                      <span>Mild</span>
+                      <span>Moderate</span>
+                      <span>High</span>
+                      <span>Overwhelmed</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Right page */}
-            <div className="glass-panel rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col">
-              <div className="space-y-10 flex-grow">
-                <SliderField
-                  icon="waves"
-                  label="Stress Level"
-                  defaultVal={2}
-                  markers={["Calm", "Mild", "Moderate", "High", "Overwhelmed"]}
-                />
-                <WinsTextArea onChange={setWinsText} />
+            {/* Right Page */}
+            <div className="glass-panel rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col" style={{ background: 'rgba(253, 250, 246, 1)', border: '1px solid rgba(255, 255, 255, 0.9)', boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)' }}>
+              <div className="flex-grow flex flex-col h-full">
+                {/* Text Area */}
+                <div className="flex-grow flex flex-col h-full">
+                  <div className="flex justify-between items-end mb-4">
+                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
+                      <span className="material-symbols-outlined">edit_note</span> Wins
+                    </h3>
+                  </div>
+                  <div className="glass-input rounded-xl flex-grow h-full p-1 relative shadow-inner" style={{ background: 'linear-gradient(180deg, rgba(246, 243, 239, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)', border: '0.5px solid rgba(114, 121, 114, 0.2)' }}>
+                    <textarea 
+                      className="w-full h-full bg-transparent border-none resize-none p-4 text-on-surface focus:ring-0 placeholder:text-outline-variant/70 handwritten-text" 
+                      placeholder="Any wins today? Big or small, write them down..."
+                      value={winsText}
+                      onChange={(e) => setWinsText(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
-
-              {/* Submit */}
               <div className="mt-10 flex justify-end">
-                <button
-                onClick={() => hasText && console.log("submit")}
-                className={`relative z-10 text-[13px] font-medium px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
-                    hasText
-                    ? "bg-primary text-on-primary shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:bg-primary-fixed-variant hover:shadow-[0_0_0_4px_rgba(39,68,47,0.15)] cursor-pointer"
-                    : "bg-surface-variant text-outline cursor-not-allowed"
-                }`}
+                <button 
+                  onClick={handleSubmit}
+                  className="bg-primary text-on-primary font-label-sm text-label-sm px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-colors shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
                 >
-                Submit Entry
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  Submit Entry
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
               </div>
             </div>
@@ -102,6 +427,7 @@ export default function CheckInPage() {
       </main>
 
       <BottomNav activePage="checkin" onNavigate={navigate} />
-    </div>
+      </div>
+    </>
   );
 }
