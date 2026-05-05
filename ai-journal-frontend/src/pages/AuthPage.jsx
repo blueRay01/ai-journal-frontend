@@ -1,7 +1,9 @@
 // src/pages/AuthPage.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-function EmailField() {
+function EmailField({ value, onChange }) {
   return (
     <div className="space-y-2">
       <label
@@ -17,6 +19,8 @@ function EmailField() {
         <input
           id="email"
           type="email"
+          value={value}
+          onChange={onChange}
           placeholder="you@example.com"
           className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base"
         />
@@ -25,7 +29,7 @@ function EmailField() {
   );
 }
 
-function PasswordField({ showForgot }) {
+function PasswordField({ showForgot, value, onChange }) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -50,6 +54,8 @@ function PasswordField({ showForgot }) {
         <input
           id="password"
           type={visible ? "text" : "password"}
+          value={value}
+          onChange={onChange}
           placeholder="••••••••"
           className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-12 transition-all outline-none text-base"
         />
@@ -69,6 +75,25 @@ function PasswordField({ showForgot }) {
 
 export default function AuthPage() {
   const [tab, setTab] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Mock authentication with dummy credentials
+    if (email === "aura@auramail.com" && password === "12345") {
+      const userData = {
+        email: email,
+        name: "Aura User",
+      };
+      login(userData);
+      navigate('/dashboard');
+    } else if (email && password) {
+      alert("Invalid credentials. Use aura@auramail.com and password 12345");
+    }
+  };
 
   return (
     <div className="bg-background min-h-screen flex items-center justify-center relative overflow-hidden font-body text-on-background px-4">
@@ -79,6 +104,15 @@ export default function AuthPage() {
 
       {/* Grain overlay */}
       <div className="absolute inset-0 bg-grain pointer-events-none" />
+
+      {/* Non-intrusive back button */}
+      <button
+        onClick={() => navigate('/')}
+        className="absolute top-8 left-8 text-on-surface-variant hover:text-primary transition-colors duration-200 p-2 rounded-full hover:bg-white/10"
+        aria-label="Back to landing page"
+      >
+        <span className="material-symbols-outlined text-2xl">arrow_back</span>
+      </button>
 
       <main className="relative z-10 w-full max-w-sm sm:max-w-md">
 
@@ -94,7 +128,7 @@ export default function AuthPage() {
         <div className="bg-white/40 backdrop-blur-3xl rounded-2xl border border-white/60 shadow-[0_40px_80px_-20px_rgba(83,97,72,0.1)] p-6 sm:p-8 relative overflow-hidden">
 
           {/* Inner gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent pointer-events-none" />
 
           <div className="relative z-10">
 
@@ -125,9 +159,13 @@ export default function AuthPage() {
             </div>
 
             {/* Form */}
-            <div className="space-y-6">
-              <EmailField />
-              <PasswordField showForgot={tab === "login"} />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <EmailField value={email} onChange={(e) => setEmail(e.target.value)} />
+              <PasswordField 
+                showForgot={tab === "login"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+              />
 
               {/* Confirm password — only on signup */}
               {tab === "signup" && (
@@ -154,7 +192,7 @@ export default function AuthPage() {
 
               {/* Submit */}
               <button
-                type="button"
+                type="submit"
                 className="w-full bg-primary hover:bg-on-secondary-container text-on-primary font-semibold py-4 rounded-full transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(83,97,72,0.4)] hover:shadow-[0_15px_25px_-10px_rgba(83,97,72,0.5)] flex items-center justify-center gap-2 group mt-2"
               >
                 {tab === "login" ? "Continue to Journal" : "Create Account"}
@@ -162,7 +200,7 @@ export default function AuthPage() {
                   arrow_forward
                 </span>
               </button>
-            </div>
+            </form>
           </div>
         </div>
 

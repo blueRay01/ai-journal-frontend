@@ -1,4 +1,5 @@
 // src/pages/DashboardPage.jsx
+import { useNavigate } from "react-router-dom";
 import StreakCard from "../components/dashboard/StreakCard";
 import EnergyFlowCard from "../components/dashboard/EnergyFlowCard";
 import RecentEntryCard from "../components/dashboard/RecentEntryCard";
@@ -21,7 +22,8 @@ const RECENT_ENTRIES = [
   },
 ];
 
-export default function DashboardPage( {onNavigate} ) {
+export default function DashboardPage() {
+  const navigate = useNavigate();
   return (
     <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-[120px]">
 
@@ -60,7 +62,7 @@ export default function DashboardPage( {onNavigate} ) {
         {/* Greeting */}
         <div className="mb-4">
           <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary">
-            Good Morning, Alex.
+            Good Morning, Klydel Asino.
           </h1>
           <p className="text-[18px] text-on-surface-variant mt-2 leading-relaxed">
             Take a moment to center yourself today.
@@ -75,7 +77,10 @@ export default function DashboardPage( {onNavigate} ) {
 
           {/* Primary CTA */}
           <div className="md:col-span-12 flex justify-center py-4">
-            <button className="bg-primary text-on-primary font-label-caps px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-[0_4px_20px_rgba(39,68,47,0.2)] flex items-center gap-2 tracking-widest uppercase text-xs">
+            <button 
+              onClick={() => navigate('/checkin')}
+              className="bg-primary text-on-primary font-label-caps px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-[0_4px_20px_rgba(39,68,47,0.2)] flex items-center gap-2 tracking-widest uppercase text-xs"
+            >
               <span className="material-symbols-outlined text-lg">add</span>
               Check in today
             </button>
@@ -88,7 +93,7 @@ export default function DashboardPage( {onNavigate} ) {
         </div>
       </main>
 
-      <BottomNav activePage="home" onNavigate={onNavigate} />
+      <BottomNav activePage="home" onNavigate={navigate} />
     </div>
   );
 }

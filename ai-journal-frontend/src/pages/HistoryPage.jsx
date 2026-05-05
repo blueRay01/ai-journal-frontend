@@ -1,4 +1,5 @@
 // src/pages/HistoryPage.jsx
+import { useNavigate } from "react-router-dom";
 import DashboardPage from "./DashboardPage";
 import BottomNav from "../components/layout/BottomNav";
 import MiniChartCard from "../components/dashboard/MiniChartCard";
@@ -42,7 +43,8 @@ const LOG_ENTRIES = [
   },
 ];
 
-export default function HistoryPage({ onNavigate }) {
+export default function HistoryPage() {
+  const navigate = useNavigate();
   return (
     <div className="text-on-surface font-body-md antialiased min-h-screen relative flex flex-col items-center pb-32 overflow-x-hidden">
 
@@ -90,7 +92,7 @@ export default function HistoryPage({ onNavigate }) {
         </section>
       </main>
 
-      <BottomNav activePage="history" onNavigate={onNavigate} />
+      <BottomNav activePage="history" onNavigate={navigate} />
     </div>
   );
 }

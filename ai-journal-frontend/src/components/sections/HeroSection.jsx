@@ -1,4 +1,5 @@
 // src/components/sections/HeroSection.jsx
+import { useNavigate } from "react-router-dom";
 
 const TRUSTED_USERS = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCb2BxbJ8wURbPLP5l-UmjvJZsvR1mxY0zgPYZFHP0aic1ooImKpGQXcLBXgOEeqyiM6x5nyndg53yKpS1atOkG-iHRlckYlf57Jn-BHgcDl4IECSKb8srNxYNFf9nEXjmEWklncSGhGBNzALsGhSfW0aQw9YP4vJwm55QUdwkp8qVbpZoMgO2gLlTrJbeLyvHFGA7jGr4c7gCD_E2IO1knoOtDk_JuMTNF7bcSgpsp9qOWeZSFy-8pAfiQqpxYHIh0qw6po91PBvA",
@@ -6,7 +7,8 @@ const TRUSTED_USERS = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAyb-LTsNmQoNXejBooCGvyCiVjX5Yt_fNT02GgkoZMud_weErgfDEThQq-nPOWekgOuUDSx7bm5VL7CIX2127fNyPcdn-luTvJf3mWiG1dIV5sd-i5uMSqaGSvE6QPXpAVWGYPlowyEilHp5vCN8wuWqCSHcSDk35FtHU-rFJT2xgX2UEXKQH2T-TcJhuqIv2iQg2O4wESonu7gW9biZUh8WWlqXzdNbVxiLC5E20YskcUidjk0PPKd8_3izYi6h1NGG2NELgnoT8",
 ];
 
-export default function HeroSection({ onBeginWriting }) {
+export default function HeroSection() {
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-[819px] flex flex-col items-center justify-center pt-10 pb-20">
 
@@ -39,7 +41,7 @@ export default function HeroSection({ onBeginWriting }) {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={onBeginWriting}
+              onClick={() => navigate('/auth')}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-primary/30 flex items-center gap-2 w-full sm:w-auto justify-center"
             >
               Begin Writing
@@ -66,7 +68,7 @@ export default function HeroSection({ onBeginWriting }) {
       </div>
 
       {/* Decorative floating cards */}
-      <div className="absolute top-1/4 left-0 w-32 h-40 bg-white dark:bg-stone-800 shadow-paper dark:shadow-paper-dark rounded-lg rotate-[-12deg] -z-10 p-4 border border-secondary/20 dark:border-secondary/40 hidden lg:block opacity-70">
+      <div className="absolute top-1/4 left-0 w-32 h-40 bg-white dark:bg-stone-800 shadow-paper dark:shadow-paper-dark rounded-lg -rotate-12 -z-10 p-4 border border-secondary/20 dark:border-secondary/40 hidden lg:block opacity-70">
         <div className="w-full h-2 bg-stone-200 dark:bg-stone-600 rounded mb-2" />
         <div className="w-3/4 h-2 bg-stone-200 dark:bg-stone-600 rounded mb-4" />
         <div className="w-full h-16 bg-secondary/20 rounded" />
