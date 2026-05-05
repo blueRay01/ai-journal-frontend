@@ -1,5 +1,12 @@
 // src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from "react";
+import { auth } from "../firebase"; // We need to create this file next!
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut 
+} from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -14,42 +21,42 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check for existing auth state on mount
+  // Firebase automatically checks for existing sessions
   useEffect(() => {
-    const storedAuth = localStorage.getItem("isAuthenticated");
-    const storedUser = localStorage.getItem("user");
-    
-    if (storedAuth === "true" && storedUser) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-    }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthenticated(!!currentUser); // true if user exists, false if null
+      setLoading(false);
+    });
+
+    return unsubscribe; // Cleanup on unmount
   }, []);
 
-  const login = (userData) => {
-    setIsAuthenticated(true);
-    setUser(userData);
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("user", JSON.stringify(userData));
+  const login = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signup = (email, password) => {
+    return createUserWithEmailAndPassword(auth, email, password);
   };
 
   const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("user");
+    return signOut(auth);
   };
 
   const value = {
     isAuthenticated,
     user,
     login,
+    signup,
     logout,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
