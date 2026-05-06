@@ -122,7 +122,7 @@ export default function AIInsightPage() {
         
         <DashboardHeader />
         
-        <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center grow relative z-10">
+        <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start grow relative z-10">
           <InsightContent insightType={currentInsight.type} />
         </main>
 
