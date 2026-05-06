@@ -358,10 +358,23 @@ export default function CheckInPage() {
                             id={`sleep-${option.key}`}
                             className="sleep-checkbox sr-only"
                             checked={sleepQuality[option.key]}
-                            onChange={(e) => setSleepQuality(prev => ({
-                              ...prev,
-                              [option.key]: e.target.checked
-                            }))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSleepQuality({
+                                  restless: false,
+                                  poor: false,
+                                  neutral: false,
+                                  good: false,
+                                  excellent: false,
+                                  [option.key]: true
+                                });
+                              } else {
+                                setSleepQuality(prev => ({
+                                  ...prev,
+                                  [option.key]: false
+                                }));
+                              }
+                            }}
                           />
                           <label
                             htmlFor={`sleep-${option.key}`}
@@ -431,10 +444,23 @@ export default function CheckInPage() {
                             id={`mood-${option.key}`}
                             className="mood-checkbox sr-only"
                             checked={mood[option.key]}
-                            onChange={(e) => setMood(prev => ({
-                              ...prev,
-                              [option.key]: e.target.checked
-                            }))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setMood({
+                                  sad: false,
+                                  anxious: false,
+                                  neutral: false,
+                                  positive: false,
+                                  happy: false,
+                                  [option.key]: true
+                                });
+                              } else {
+                                setMood(prev => ({
+                                  ...prev,
+                                  [option.key]: false
+                                }));
+                              }
+                            }}
                           />
                           <label
                             htmlFor={`mood-${option.key}`}
@@ -503,10 +529,22 @@ export default function CheckInPage() {
                             id={`stress-${option.key}`}
                             className="stress-checkbox sr-only"
                             checked={stressLevel[option.key]}
-                            onChange={(e) => setStressLevel(prev => ({
-                              ...prev,
-                              [option.key]: e.target.checked
-                            }))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setStressLevel({
+                                  calm: false,
+                                  tense: false,
+                                  neutral: false,
+                                  overwhelmed: false,
+                                  [option.key]: true
+                                });
+                              } else {
+                                setStressLevel(prev => ({
+                                  ...prev,
+                                  [option.key]: false
+                                }));
+                              }
+                            }}
                           />
                           <label
                             htmlFor={`stress-${option.key}`}
