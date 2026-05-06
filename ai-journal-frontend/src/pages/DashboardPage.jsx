@@ -36,9 +36,6 @@ export default function DashboardPage() {
         <div className="text-xl font-bold tracking-tight text-primary">Aura Journal</div>
         <div className="flex gap-4 text-primary">
           <button className="hover:opacity-70 transition-opacity duration-300">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-          <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">account_circle</span>
           </button>
         </div>

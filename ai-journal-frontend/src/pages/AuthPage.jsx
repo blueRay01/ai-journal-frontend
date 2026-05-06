@@ -125,7 +125,7 @@ export default function AuthPage() {
         </div>
 
         {/* Glassmorphic card */}
-        <div className="bg-white/40 backdrop-blur-3xl rounded-2xl border border-white/60 shadow-[0_40px_80px_-20px_rgba(83,97,72,0.1)] p-6 sm:p-8 relative overflow-hidden">
+        <div className="bg-white/40 backdrop-blur-3xl rounded-2xl border border-white/60 shadow-[0_40px_80px_-20px_rgba(83,97,72,0.3)] p-6 sm:p-8 relative overflow-hidden">
 
           {/* Inner gradient */}
           <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent pointer-events-none" />

@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/layout/BottomNav";
 import { useState } from "react";
+import DashboardHeader from "../components/layout/DashboardHeader";
 
 // Add styles
 const styles = `
@@ -218,18 +219,7 @@ export default function CheckInPage() {
         <div className="aura-tl"></div>
         <div className="aura-br"></div>
 
-      {/* TopAppBar */}
-      <header className="flex justify-between items-center w-full px-8 py-6 bg-transparent docked full-width top-0 z-40 relative">
-        <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100 tracking-tight drop-shadow-sm">Aura Journal</div>
-        <div className="flex items-center gap-4">
-          <button className="text-emerald-900 dark:text-emerald-400 hover:opacity-70 transition-opacity ease-in-out duration-300 drop-shadow-sm">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>settings</span>
-          </button>
-          <button className="text-emerald-900 dark:text-emerald-400 hover:opacity-70 transition-opacity ease-in-out duration-300 drop-shadow-sm">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>account_circle</span>
-          </button>
-        </div>
-      </header>
+      <DashboardHeader />
 
       <main className="max-w-[1000px] mx-auto px-4 md:px-8 mt-4 md:mt-12">
 
