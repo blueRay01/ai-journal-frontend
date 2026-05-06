@@ -75,12 +75,12 @@ export default function DashboardPage() {
           {/* Primary CTA */}
           <div className="md:col-span-12 flex justify-center py-4">
             <button 
-              onClick={() => navigate('/checkin')}
-              className="bg-primary text-on-primary font-label-caps px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-[0_4px_20px_rgba(39,68,47,0.2)] flex items-center gap-2 tracking-widest uppercase text-xs"
-            >
-              <span className="material-symbols-outlined text-lg">add</span>
-              Check in today
-            </button>
+            onClick={() => navigate('/checkin')}
+            className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-lg">add</span>
+            Check in today
+          </button>
           </div>
 
           {/* Recent entries */}

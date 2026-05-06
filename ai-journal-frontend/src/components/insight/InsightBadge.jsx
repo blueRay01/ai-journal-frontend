@@ -7,9 +7,9 @@ export default function InsightBadge() {
         <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
         Insight Generated
       </div>
-      <button className="text-primary/40 hover:text-primary transition-colors p-2 bg-white/50 rounded-full hover:bg-white/80">
+      {/* <button className="text-primary/40 hover:text-primary transition-colors p-2 bg-white/50 rounded-full hover:bg-white/80">
         <span className="material-symbols-outlined">share</span>
-      </button>
+      </button> */}
     </div>
   );
 }

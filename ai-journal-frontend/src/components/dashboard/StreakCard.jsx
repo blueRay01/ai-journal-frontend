@@ -5,7 +5,7 @@ const FILLED_DOTS = 3; // how many of the 5 indicator dots are active
 
 export default function StreakCard() {
   return (
-    <div className="md:col-span-4 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-8 flex flex-col items-center justify-center shadow-sm relative overflow-hidden">
+    <div className="md:col-span-4 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-8 flex flex-col items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative overflow-hidden">
       {/* Top accent bar */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/20 to-primary/60" />
 
