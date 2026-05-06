@@ -1,9 +1,50 @@
 // src/pages/AIInsightPage.jsx
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import InsightContent from "../components/insight/InsightContent";
 import InsightBackground from "../components/insight/InsightBackground";
 import BottomNav from "../components/layout/BottomNav";
 import DashboardHeader from "../components/layout/DashboardHeader";
+
+// Sample insight data - in a real app, this would come from AI analysis
+const SAMPLE_INSIGHTS = [
+  {
+    id: 1,
+    type: "morning_routine",
+    title: "A Moment of Clarity",
+    content: "Based on your recent entries, we noticed a beautiful pattern. Your focus and sense of calm consistently peak on days you complete your morning walk before 8 AM."
+  },
+  {
+    id: 2,
+    type: "stress_management",
+    title: "Stress Relief Through Nature",
+    content: "Your journal entries show that spending time in nature significantly reduces your stress levels. Consider adding more outdoor activities to your routine."
+  },
+  {
+    id: 3,
+    type: "sleep_quality",
+    title: "Sleep and Performance Connection",
+    content: "We've noticed that nights with 7+ hours of sleep consistently lead to better mood and productivity the following day."
+  },
+  {
+    id: 4,
+    type: "mood_improvement",
+    title: "Positive Momentum Building",
+    content: "Your mood has been steadily improving over the past week. This positive trend correlates with your increased physical activity."
+  },
+  {
+    id: 5,
+    type: "exercise_consistency",
+    title: "Consistency is Key",
+    content: "Even short 15-minute exercise sessions are contributing significantly to your overall wellbeing and energy levels."
+  },
+  {
+    id: 6,
+    type: "energy_levels",
+    title: "Energy Flow Optimization",
+    content: "Your energy levels peak in the late morning. Consider scheduling important tasks during this optimal window."
+  }
+];
 
 const styles = `
   body {
@@ -14,6 +55,23 @@ const styles = `
 `;
 
 export default function AIInsightPage() {
+  const navigate = useNavigate();
+  const [currentInsight, setCurrentInsight] = useState(SAMPLE_INSIGHTS[0]);
+
+  // In a real app, this would fetch insights from an AI service
+  // For now, we'll cycle through sample insights
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentInsight(prev => {
+        const currentIndex = SAMPLE_INSIGHTS.findIndex(insight => insight.id === prev.id);
+        const nextIndex = (currentIndex + 1) % SAMPLE_INSIGHTS.length;
+        return SAMPLE_INSIGHTS[nextIndex];
+      });
+    }, 5000); // Change insight every 5 seconds for smoother transitions
+
+    return () => clearInterval(interval);
+  }, []);
+
   const styles = `
   body {
     background-color: #FDFAF6;
@@ -55,7 +113,6 @@ export default function AIInsightPage() {
     box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.1), 0 10px 20px -10px rgba(0, 0, 0, 0.05);
   }
 `;
-  const navigate = useNavigate();
 
   return (
     <>
@@ -66,7 +123,7 @@ export default function AIInsightPage() {
         <DashboardHeader />
         
         <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center grow relative z-10">
-          <InsightContent />
+          <InsightContent insightType={currentInsight.type} />
         </main>
 
         <BottomNav activePage="insights" onNavigate={navigate} />

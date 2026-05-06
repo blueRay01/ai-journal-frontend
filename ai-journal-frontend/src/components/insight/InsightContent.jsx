@@ -2,12 +2,12 @@
 import InsightImage from "./InsightImage";
 import InsightPanel from "./InsightPanel";
 
-export default function InsightContent() {
+export default function InsightContent({ insightType }) {
   return (
     <>
       {/* Left Side: Image + Symbols */}
       <div className="col-span-1 md:col-span-5 flex flex-col gap-8 order-2 md:order-1">
-        <InsightImage />
+        <InsightImage insightType={insightType} />
       </div>
       
       {/* Right Side: Text in Glass Panel */}

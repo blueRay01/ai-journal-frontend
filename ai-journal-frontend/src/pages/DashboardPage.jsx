@@ -4,6 +4,7 @@ import StreakCard from "../components/dashboard/StreakCard";
 import EnergyFlowCard from "../components/dashboard/EnergyFlowCard";
 import RecentEntryCard from "../components/dashboard/RecentEntryCard";
 import BottomNav from "../components/layout/BottomNav";
+import DashboardHeader from "../components/layout/DashboardHeader";
 
 const RECENT_ENTRIES = [
   {
@@ -31,6 +32,7 @@ export default function DashboardPage() {
       <div className="aura-top-right" />
       <div className="aura-bottom-left" />
 
+<<<<<<< HEAD
       {/* Top App Bar — Desktop */}
       <header className="hidden md:flex justify-between items-center w-full px-8 py-6 bg-transparent text-primary font-label-caps tracking-widest uppercase text-xs z-40 relative">
         <div className="text-xl font-bold tracking-tight text-primary">Aura Journal</div>
@@ -56,6 +58,9 @@ export default function DashboardPage() {
           </button>
         </div>
       </header>
+=======
+      <DashboardHeader />
+>>>>>>> 061ddf9991d00dd0b573e7c4cb068d1897e811ff
 
       <main className="max-w-[1280px] mx-auto px-4 md:px-12 py-8 flex flex-col gap-6">
 
