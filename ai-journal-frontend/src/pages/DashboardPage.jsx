@@ -1,10 +1,11 @@
 // src/pages/DashboardPage.jsx
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import StreakCard from "../components/dashboard/StreakCard";
 import EnergyFlowCard from "../components/dashboard/EnergyFlowCard";
 import RecentEntryCard from "../components/dashboard/RecentEntryCard";
 import BottomNav from "../components/layout/BottomNav";
-import DashboardHeader from "../components/layout/DashboardHeader";
 
 const RECENT_ENTRIES = [
   {
@@ -25,14 +26,24 @@ const RECENT_ENTRIES = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { logout, currentUser } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   return (
     <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-[120px]">
 
-      {/* Ambient gradients — mirrors the HTML prototype */}
+      {/* Ambient gradients */}
       <div className="aura-top-right" />
       <div className="aura-bottom-left" />
 
-<<<<<<< HEAD
       {/* Top App Bar — Desktop */}
       <header className="hidden md:flex justify-between items-center w-full px-8 py-6 bg-transparent text-primary font-label-caps tracking-widest uppercase text-xs z-40 relative">
         <div className="text-xl font-bold tracking-tight text-primary">Aura Journal</div>
@@ -40,7 +51,7 @@ export default function DashboardPage() {
           <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">settings</span>
           </button>
-          <button className="hover:opacity-70 transition-opacity duration-300">
+          <button onClick={handleLogout} className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">account_circle</span>
           </button>
         </div>
@@ -53,21 +64,18 @@ export default function DashboardPage() {
           <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">settings</span>
           </button>
-          <button className="hover:opacity-70 transition-opacity duration-300">
+          <button onClick={handleLogout} className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">account_circle</span>
           </button>
         </div>
       </header>
-=======
-      <DashboardHeader />
->>>>>>> 061ddf9991d00dd0b573e7c4cb068d1897e811ff
 
       <main className="max-w-[1280px] mx-auto px-4 md:px-12 py-8 flex flex-col gap-6">
 
-        {/* Greeting */}
+        {/* Greeting — DYNAMIC */}
         <div className="mb-4">
           <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary">
-            Good Morning, Klydel Asino.
+            Good Morning, {currentUser?.email?.split('@')[0] || "User"}.
           </h1>
           <p className="text-[18px] text-on-surface-variant mt-2 leading-relaxed">
             Take a moment to center yourself today.
@@ -76,7 +84,6 @@ export default function DashboardPage() {
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
           <StreakCard />
           <EnergyFlowCard />
 
