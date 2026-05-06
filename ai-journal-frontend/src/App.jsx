@@ -12,7 +12,7 @@ import HistoryPage from "./pages/HistoryPage";
 import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 import AIInsightPage from "./pages/AIInsightPage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function FadeTransition({ children }) {
   const [isVisible, setIsVisible] = useState(false);

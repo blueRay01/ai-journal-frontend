@@ -14,6 +14,7 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   // Check for existing auth state on mount
   useEffect(() => {
@@ -24,6 +25,8 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       setUser(JSON.parse(storedUser));
     }
+
+    setAuthReady(true);
   }, []);
 
   const login = (userData) => {
@@ -34,13 +37,16 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    console.log("Logout function called - clearing auth state");
     setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("user");
+    console.log("Logout completed - auth state cleared");
   };
 
   const value = {
+    authReady,
     isAuthenticated,
     user,
     login,
