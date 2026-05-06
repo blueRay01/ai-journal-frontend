@@ -12,72 +12,23 @@ import HistoryPage from "./pages/HistoryPage";
 import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 import AIInsightPage from "./pages/AIInsightPage";
-import { useState, useEffect, useRef } from "react";
-
-// Navigation order for directional animations
-const NAVIGATION_ORDER = ['/dashboard', '/checkin', '/insights', '/history', '/report'];
-
-function getNavigationDirection(from, to) {
-  const fromIndex = NAVIGATION_ORDER.indexOf(from);
-  const toIndex = NAVIGATION_ORDER.indexOf(to);
-  
-  if (fromIndex === -1 || toIndex === -1) return 'fade';
-  return toIndex > fromIndex ? 'right' : 'left';
-}
+import { useState, useEffect } from "react";
 
 function FadeTransition({ children }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [direction, setDirection] = useState('fade');
   const location = useLocation();
-  const prevLocationRef = useRef(location);
 
   useEffect(() => {
-    const prevPath = prevLocationRef.current.pathname;
-    const currentPath = location.pathname;
-    
-    // Determine direction
-    const navDirection = getNavigationDirection(prevPath, currentPath);
-    setDirection(navDirection);
-    
-    // Fade out
     setIsVisible(false);
-    
-    // Fade in with new direction
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 50);
-    
-    prevLocationRef.current = location;
+    const timer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(timer);
   }, [location]);
 
-  const getAnimationClasses = () => {
-    if (!isVisible) {
-      // Fade out animation
-      switch (direction) {
-        case 'right':
-          return 'opacity-0 translate-x-8';
-        case 'left':
-          return 'opacity-0 -translate-x-8';
-        default:
-          return 'opacity-0';
-      }
-    } else {
-      // Fade in animation
-      switch (direction) {
-        case 'right':
-          return 'opacity-100 translate-x-0';
-        case 'left':
-          return 'opacity-100 -translate-x-0';
-        default:
-          return 'opacity-100';
-      }
-    }
-  };
-
   return (
     <div 
-      className={`transition-all duration-500 ease-in-out ${getAnimationClasses()}`}
+      className={`transition-opacity duration-500 ease-in-out ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
     >
       {children}
     </div>
