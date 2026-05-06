@@ -14,7 +14,7 @@ const DATA_POINTS = [
 
 export default function EnergyFlowCard() {
   return (
-    <div className="md:col-span-8 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-6 shadow-sm flex flex-col">
+    <div className="md:col-span-8 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h3 className="font-headline-md text-on-surface text-[24px] font-medium leading-snug">

@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/layout/BottomNav";
 import { useState } from "react";
+import DashboardHeader from "../components/layout/DashboardHeader";
 
 // Add styles
 const styles = `
@@ -185,6 +186,12 @@ const styles = `
   .toggle-checkbox:checked + .toggle-label::after {
     transform: translateX(24px);
   }
+
+  body {
+    background-color: #FAF3E1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    min-height: 100vh;
+  }
 `;
 
 export default function CheckInPage() {
@@ -211,31 +218,20 @@ export default function CheckInPage() {
 
   return (
     <>
+      
       <style>{styles}</style>
-      <div className="text-on-surface font-body-md relative overflow-x-hidden pb-40" style={{ backgroundColor: '#FAF3E1', backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.08\'/%3E%3C/svg%3E")' }}>
+      <div className="text-on-surface font-body-md relative overflow-x-clip pb-40">
 
-        {/* Atmospheric Auras */}
-        <div className="aura-tl"></div>
-        <div className="aura-br"></div>
-
-      {/* TopAppBar */}
-      <header className="flex justify-between items-center w-full px-8 py-6 bg-transparent docked full-width top-0 z-40 relative">
-        <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100 tracking-tight drop-shadow-sm">Aura Journal</div>
-        <div className="flex items-center gap-4">
-          <button className="text-emerald-900 dark:text-emerald-400 hover:opacity-70 transition-opacity ease-in-out duration-300 drop-shadow-sm">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>settings</span>
-          </button>
-          <button className="text-emerald-900 dark:text-emerald-400 hover:opacity-70 transition-opacity ease-in-out duration-300 drop-shadow-sm">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>account_circle</span>
-          </button>
-        </div>
-      </header>
+      {/* Atmospheric Auras */}
+      <div className="aura-tl"></div>
+      <div className="aura-br"></div>
+      <DashboardHeader />
 
       <main className="max-w-[1000px] mx-auto px-4 md:px-8 mt-4 md:mt-12">
 
         {/* Header */}
         <div className="mb-16 text-center drop-shadow-md">
-          <h1 className="font-display text-display text-primary mb-2">Daily Check-in</h1>
+          <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">Daily Check-in</h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant">Take a moment to reflect on your day.</p>
           <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-fixed/50 text-on-secondary-container font-label-sm text-label-sm border border-secondary-fixed-dim/30 shadow-sm">
             <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
@@ -254,7 +250,13 @@ export default function CheckInPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
 
             {/* Left Page */}
-            <div className="glass-panel rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]" style={{ background: 'rgba(253, 250, 246, 1)', border: '1px solid rgba(255, 255, 255, 0.9)', boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)' }}>
+            <div className="rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]" style={{ 
+              background: 'rgba(253, 250, 246, 0.75)', 
+              border: '1px solid rgba(255, 255, 255, 0.9)', 
+              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)'
+            }}>
               <div className="space-y-10">
                 {/* Exercise Section */}
                 <div className="flex items-center justify-between border-b border-outline-variant/20 pb-6">
@@ -393,7 +395,13 @@ export default function CheckInPage() {
             </div>
 
             {/* Right Page */}
-            <div className="glass-panel rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col" style={{ background: 'rgba(253, 250, 246, 1)', border: '1px solid rgba(255, 255, 255, 0.9)', boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)' }}>
+            <div className="rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col" style={{ 
+              background: 'rgba(253, 250, 246, 0.75)', 
+              border: '1px solid rgba(255, 255, 255, 0.9)', 
+              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)'
+            }}>
               <div className="flex-grow flex flex-col h-full">
                 {/* Text Area */}
                 <div className="flex-grow flex flex-col h-full">
@@ -415,7 +423,7 @@ export default function CheckInPage() {
               <div className="mt-10 flex justify-end">
                 <button 
                   onClick={handleSubmit}
-                  className="bg-primary text-on-primary font-label-sm text-label-sm px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-colors shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
+                  className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-colors shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
                 >
                   Submit Entry
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>

@@ -86,7 +86,7 @@ export default function HistoryPage() {
             <EntryRow key={entry.timestamp} {...entry} />
           ))}
 
-          <button className="mx-auto mt-4 px-6 py-2 rounded-full border border-primary/20 text-primary font-label-sm text-[13px] hover:bg-primary/5 transition-colors">
+          <button className="mx-auto mt-4 px-6 py-2 rounded-full border border-primary/20 text-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal hover:bg-primary/5 transition-colors">
             Load More
           </button>
         </section>

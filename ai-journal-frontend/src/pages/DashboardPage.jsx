@@ -1,6 +1,5 @@
 // src/pages/DashboardPage.jsx
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext"; // ADDED
 import StreakCard from "../components/dashboard/StreakCard";
 import EnergyFlowCard from "../components/dashboard/EnergyFlowCard";
 import RecentEntryCard from "../components/dashboard/RecentEntryCard";
@@ -25,17 +24,6 @@ const RECENT_ENTRIES = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { logout, currentUser } = useAuth(); // ADDED currentUser
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-  };
-
   return (
     <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-[120px]">
 
@@ -50,7 +38,7 @@ export default function DashboardPage() {
           <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">settings</span>
           </button>
-          <button onClick={handleLogout} className="hover:opacity-70 transition-opacity duration-300">
+          <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">account_circle</span>
           </button>
         </div>
@@ -63,7 +51,7 @@ export default function DashboardPage() {
           <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">settings</span>
           </button>
-          <button onClick={handleLogout} className="hover:opacity-70 transition-opacity duration-300">
+          <button className="hover:opacity-70 transition-opacity duration-300">
             <span className="material-symbols-outlined">account_circle</span>
           </button>
         </div>
@@ -71,10 +59,10 @@ export default function DashboardPage() {
 
       <main className="max-w-[1280px] mx-auto px-4 md:px-12 py-8 flex flex-col gap-6">
 
-        {/* Greeting — NOW DYNAMIC */}
+        {/* Greeting */}
         <div className="mb-4">
           <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary">
-            Good Morning, {currentUser?.email?.split('@')[0] || "User"}.
+            Good Morning, Klydel Asino.
           </h1>
           <p className="text-[18px] text-on-surface-variant mt-2 leading-relaxed">
             Take a moment to center yourself today.

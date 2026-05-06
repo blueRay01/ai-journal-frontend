@@ -1,24 +1,76 @@
 // src/pages/AIInsightPage.jsx
 import { useNavigate } from "react-router-dom";
-import InsightHeader from "../components/insight/InsightHeader";
 import InsightContent from "../components/insight/InsightContent";
 import InsightBackground from "../components/insight/InsightBackground";
 import BottomNav from "../components/layout/BottomNav";
+import DashboardHeader from "../components/layout/DashboardHeader";
+
+const styles = `
+  body {
+    background-color: #FDFAF6;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    min-height: 100vh;
+  }
+`;
 
 export default function AIInsightPage() {
+  const styles = `
+  body {
+    background-color: #FDFAF6;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    min-height: 100vh;
+  }
+
+  .aura-1 {
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(173,207,178,0.7) 0%, rgba(253,250,246,0) 70%);
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .aura-2 {
+    position: fixed;
+    bottom: -10%;
+    right: -20%;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(173,207,178,0.6) 0%, rgba(253,250,246,0) 70%);
+    border-radius: 50%;
+    filter: blur(90px);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .glass-panel {
+    background: rgba(253, 250, 246, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.1), 0 10px 20px -10px rgba(0, 0, 0, 0.05);
+  }
+`;
   const navigate = useNavigate();
 
   return (
-    <div className="text-on-background min-h-screen relative font-body-md overflow-x-hidden antialiased flex flex-col items-center pb-40" style={{ backgroundColor: '#FDFAF6', backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' opacity=\'0.08\'/%3E%3C/svg%3E")' }}>
-      <InsightBackground />
-      
-      <InsightHeader />
-      
-      <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center grow relative z-10">
-        <InsightContent />
-      </main>
+    <>
+      <style>{styles}</style>
+      <div className="text-on-background min-h-screen relative font-body-md overflow-x-clip antialiased flex flex-col items-center pb-40">
+        <InsightBackground />
+        
+        <DashboardHeader />
+        
+        <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center grow relative z-10">
+          <InsightContent />
+        </main>
 
-      <BottomNav activePage="insights" onNavigate={navigate} />
-    </div>
+        <BottomNav activePage="insights" onNavigate={navigate} />
+      </div>
+    </>
   );
 }

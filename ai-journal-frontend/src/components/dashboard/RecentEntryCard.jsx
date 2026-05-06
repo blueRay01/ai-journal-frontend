@@ -22,7 +22,7 @@ export default function RecentEntryCard({
   return (
     <div
       onClick={onClick}
-      className="md:col-span-6 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-6 shadow-sm flex items-center gap-4 hover:bg-surface-container-low transition-colors cursor-pointer"
+      className="md:col-span-6 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex items-center gap-4 hover:bg-surface-container-low transition-colors cursor-pointer"
     >
       {/* Icon bubble */}
       <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center`}>

@@ -15,11 +15,11 @@ export default function FocusCard({
         {label}
       </h3>
       <h2 className="text-[32px] font-semibold leading-snug text-on-surface mb-4">{title}</h2>
-      <p className="text-[16px] text-outline leading-relaxed mb-6">{body}</p>
+      <p className="font-normal text-[16px] text-outline leading-relaxed mb-6">{body}</p>
 
       <button
         onClick={onSetFocus}
-        className="bg-primary text-on-primary px-6 py-3 rounded-full text-[16px] hover:bg-surface-tint transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-300 w-full sm:w-auto"
+        className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal px-6 py-3 rounded-full hover:bg-surface-tint transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-300 w-full sm:w-auto"
       >
         Set as Active Focus
       </button>
