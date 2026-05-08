@@ -1,12 +1,5 @@
 // src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from "react";
-import { auth } from "../config/firebase"; // We need to create this file next!
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut 
-} from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -21,10 +14,9 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
 
-  // Firebase automatically checks for existing sessions
+  // Check for existing auth state on mount
   useEffect(() => {
     const storedAuth = localStorage.getItem("isAuthenticated");
     const storedUser = localStorage.getItem("user");
@@ -37,12 +29,11 @@ export function AuthProvider({ children }) {
     setAuthReady(true);
   }, []);
 
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const login = (userData) => {
+    setIsAuthenticated(true);
+    setUser(userData);
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const logout = () => {
@@ -59,13 +50,12 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     user,
     login,
-    signup,
     logout,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
