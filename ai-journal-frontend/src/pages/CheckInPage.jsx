@@ -382,7 +382,7 @@ export default function CheckInPage() {
                           />
                           <label
                             htmlFor={`sleep-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg"
+                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg relative"
                           >
                             <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
                               {sleepQuality[option.key] && (
@@ -416,7 +416,10 @@ export default function CheckInPage() {
                                 </svg>
                               )}
                             </div>
-                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center">{option.label}</span>
+                            <span className="text-xs text-on-surface-variant text-center font-medium relative">
+                              <span className="absolute inset-0 opacity-10 blur-sm">{option.label}</span>
+                              <span className="relative z-10">{option.label}</span>
+                            </span>
                           </label>
                         </div>
                       ))}
@@ -467,7 +470,7 @@ export default function CheckInPage() {
                           />
                           <label
                             htmlFor={`mood-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg"
+                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg relative"
                           >
                             <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
                               {mood[option.key] && (
@@ -501,7 +504,10 @@ export default function CheckInPage() {
                                 </svg>
                               )}
                             </div>
-                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center">{option.label}</span>
+                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center relative">
+                              <span className="absolute inset-0 opacity-10 blur-sm">{option.label}</span>
+                              <span className="relative z-10">{option.label}</span>
+                            </span>
                           </label>
                         </div>
                       ))}
@@ -551,7 +557,7 @@ export default function CheckInPage() {
                           />
                           <label
                             htmlFor={`stress-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg"
+                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg relative"
                           >
                             <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
                               {stressLevel[option.key] && (
@@ -585,7 +591,10 @@ export default function CheckInPage() {
                                 </svg>
                               )}
                             </div>
-                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center">{option.label}</span>
+                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center relative">
+                              <span className="absolute inset-0 opacity-10 blur-sm">{option.label}</span>
+                              <span className="relative z-10">{option.label}</span>
+                            </span>
                           </label>
                         </div>
                       ))}
