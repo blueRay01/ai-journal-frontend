@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/layout/BottomNav";
 import { useState } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
+import { useAuth } from "../contexts/AuthContext";
+import { saveJournalEntry } from "../services/journalService";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
@@ -198,6 +200,8 @@ export default function CheckInPage() {
   const [mood, setMood] = useState({ sad: false, anxious: false, neutral: false, positive: false, happy: false });
   const [stressLevel, setStressLevel] = useState({ calm: false, tense: false, neutral: false, moderate: false, overwhelmed: false });
   const [winsText, setWinsText] = useState("");
+  const { user } = useAuth(); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectSingle = (setter, key) => setter(prev =>
     Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
