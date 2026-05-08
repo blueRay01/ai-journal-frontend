@@ -89,7 +89,7 @@ export default function EntryRow({ emoji, timestamp, score, preview, onClick }) 
         className={[
           "px-4 pb-4",
           "transition-[max-height,opacity] duration-200 ease-out",
-          isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0",
+          isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
           "overflow-hidden",
         ].join(" ")}
       >

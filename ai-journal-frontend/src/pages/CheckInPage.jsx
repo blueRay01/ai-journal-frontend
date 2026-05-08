@@ -346,7 +346,6 @@ export default function CheckInPage() {
                       <span className="material-symbols-outlined text-primary text-2xl">bedtime</span>
                       <div>
                         <h3 className="font-headline-md text-headline-md text-primary">Sleep Quality</h3>
-                        <span className="font-label-caps text-label-caps text-on-surface-variant bg-surface px-2 py-1 rounded shadow-sm">REST</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-5 gap-3">
@@ -432,7 +431,6 @@ export default function CheckInPage() {
                       <span className="material-symbols-outlined text-primary text-2xl">mood</span>
                       <div>
                         <h3 className="font-headline-md text-headline-md text-primary">Mood</h3>
-                        <span className="font-label-caps text-label-caps text-on-surface-variant bg-surface px-2 py-1 rounded shadow-sm">FEELING</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-5 gap-3">
