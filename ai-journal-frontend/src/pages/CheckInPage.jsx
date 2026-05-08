@@ -7,8 +7,21 @@ import { useAuth } from "../contexts/AuthContext";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
-// ── Key used by AIInsightPage to read the latest entry ───────────────────────
 const CHECKIN_STORAGE_KEY = "ai_journal_latest_checkin";
+
+// ── Wellness score calculation ─────────────────────────────────────────────
+const MOOD_SCORES   = { sad: 2, anxious: 4, neutral: 5, positive: 7, happy: 9 };
+const SLEEP_SCORES  = { restless: 2, poor: 4, neutral: 5, good: 7, excellent: 9 };
+const STRESS_SCORES = { overwhelmed: 1, tense: 3, neutral: 5, moderate: 7, calm: 9 };
+
+function calculateWellnessScore(mood, sleep, stress, exercise) {
+  const moodScore    = MOOD_SCORES[mood]    ?? 5;
+  const sleepScore   = SLEEP_SCORES[sleep]  ?? 5;
+  const stressScore  = STRESS_SCORES[stress] ?? 5;
+  const exerciseBonus = exercise ? 0.5 : 0;
+  return Math.min(Math.round((moodScore + sleepScore + stressScore) / 3 + exerciseBonus), 10);
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
@@ -31,14 +44,6 @@ const styles = `
 
   .animate-handwritten-check path:last-child {
     animation: handwritten-check 0.3s ease-in-out 0.1s both;
-  }
-
-  .exercise-checkbox:checked + label,
-  .sleep-checkbox:checked + label,
-  .mood-checkbox:checked + label,
-  .stress-checkbox:checked + label {
-    background-color: transparent;
-    border-color: transparent;
   }
 
   .aura-tl {
@@ -204,7 +209,7 @@ export default function CheckInPage() {
   const [mood, setMood] = useState({ sad: false, anxious: false, neutral: false, positive: false, happy: false });
   const [stressLevel, setStressLevel] = useState({ calm: false, tense: false, neutral: false, moderate: false, overwhelmed: false });
   const [winsText, setWinsText] = useState("");
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
@@ -247,7 +252,7 @@ export default function CheckInPage() {
         where("createdAt", ">=", today),
         where("createdAt", "<", tomorrow)
       );
-      
+
       const querySnapshot = await getDocs(q);
       setHasCheckedInToday(!querySnapshot.empty);
     } catch (error) {
@@ -263,67 +268,97 @@ export default function CheckInPage() {
   );
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!user || hasCheckedInToday) return;
+    e.preventDefault();
+    if (!user || hasCheckedInToday) return;
 
-  try {
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-    const selectedSleepQuality = Object.keys(sleepQuality).find(key => sleepQuality[key]);
-    const selectedMood = Object.keys(mood).find(key => mood[key]);
-    const selectedStressLevel = Object.keys(stressLevel).find(key => stressLevel[key]);
+      const selectedSleepQuality = Object.keys(sleepQuality).find(key => sleepQuality[key]);
+      const selectedMood         = Object.keys(mood).find(key => mood[key]);
+      const selectedStressLevel  = Object.keys(stressLevel).find(key => stressLevel[key]);
 
-    const journalEntry = {
-      userId: user.uid,
-      exercise: exerciseChecked,
-      sleepQuality: selectedSleepQuality || "neutral",
-      mood: selectedMood || "neutral",
-      stressLevel: selectedStressLevel || "neutral",
-      reflection: winsText.trim(),
-      date: currentDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
-      createdAt: serverTimestamp(),
-    };
+      const moodVal   = selectedMood          || "neutral";
+      const sleepVal  = selectedSleepQuality  || "neutral";
+      const stressVal = selectedStressLevel   || "neutral";
 
-    // 1. Save entry to Firestore first
-    const docRef = await addDoc(collection(db, "journalEntries"), journalEntry);
-    console.log("Journal entry saved:", docRef.id);
+      // ── Calculate score from selections ───────────────────────────────────
+      const score = calculateWellnessScore(moodVal, sleepVal, stressVal, exerciseChecked);
+      // ──────────────────────────────────────────────────────────────────────
 
-    // 2. Navigate immediately — AIInsightPage will show "generating..." while we finish
-    setHasCheckedInToday(true);
-    window.dispatchEvent(new CustomEvent("refreshStreak"));
-    navigate("/insights", { state: { entryId: docRef.id } });
-
-    // 3. Call Express server to generate AI insight
-    const aiRes = await fetch("http://localhost:5000/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      const journalEntry = {
+        userId: user.uid,
         exercise: exerciseChecked,
-        sleepQuality: selectedSleepQuality || "neutral",
-        mood: selectedMood || "neutral",
-        stressLevel: selectedStressLevel || "neutral",
+        sleepQuality: sleepVal,
+        mood: moodVal,
+        stressLevel: stressVal,
         reflection: winsText.trim(),
-      }),
-    });
+        date: currentDate.toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric',
+        }),
+        createdAt: serverTimestamp(),
+      };
 
-    if (!aiRes.ok) throw new Error("AI generation failed");
-    const aiData = await aiRes.json();
+      // 1. Save entry to Firestore
+      const docRef = await addDoc(collection(db, "journalEntries"), journalEntry);
+      console.log("Journal entry saved:", docRef.id);
 
-    // 4. Update Firestore doc with AI results — onSnapshot in AIInsightPage picks this up
-    await updateDoc(doc(db, "journalEntries", docRef.id), {
-      aiInsight: aiData.insight,
-      insightType: aiData.insight.type,
-      tomorrowTimeline: aiData.timeline,
-    });
+      // 2. Save to localStorage
+      const localEntry = {
+        exercise: exerciseChecked,
+        sleepQuality: sleepVal,
+        mood: moodVal,
+        stressLevel: stressVal,
+        reflection: winsText.trim(),
+        timestamp: new Date().toISOString(),
+        firestoreId: docRef.id,
+      };
+      localStorage.setItem(CHECKIN_STORAGE_KEY, JSON.stringify(localEntry));
 
-    console.log("AI insight saved to Firestore");
+      // 3. Navigate immediately — insight page shows "generating..." state
+      setHasCheckedInToday(true);
+      window.dispatchEvent(new CustomEvent("refreshStreak"));
+      navigate("/insights", { state: { entryId: docRef.id } });
 
-  } catch (error) {
-    console.error("Error:", error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      // 4. Call Express server for AI insight
+      const aiRes = await fetch("http://localhost:5000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exercise: exerciseChecked,
+          sleepQuality: sleepVal,
+          mood: moodVal,
+          stressLevel: stressVal,
+          reflection: winsText.trim(),
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const errData = await aiRes.json();
+        console.error("Server error:", errData.error);
+        throw new Error(errData.error);
+      }
+
+      const aiData = await aiRes.json();
+
+      // 5. Update Firestore with AI results + calculated score
+      await updateDoc(doc(db, "journalEntries", docRef.id), {
+        aiInsight:        aiData.insight,
+        insightType:      aiData.insight.type,
+        tomorrowTimeline: aiData.timeline,
+        summaryEmoji:     aiData.summary.emoji,
+        summaryScore:     score,               // ← from calculateWellnessScore, not AI
+        summaryPreview:   aiData.summary.preview,
+      });
+
+      console.log("AI insight saved to Firestore");
+
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const sectionCard = "p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-white/40";
   const checkboxBase = "w-5 h-5 border-2 border-[#27442f] rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm";
@@ -337,7 +372,7 @@ export default function CheckInPage() {
           style={{ background: 'linear-gradient(to bottom, #f5f5f0, #e8e8e0)' }}
         >
           <div className="text-center">
-            <div className="w-8 h-8 border-2 border-[#c8c8c0] border-t-[#5a7a5a] rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-2 border-[#c8c8c0] border-t-[#5a7a5a] rounded-full animate-spin" />
             <p className="mt-4 text-[#888880]">Loading check-in status...</p>
           </div>
         </div>
@@ -364,7 +399,7 @@ export default function CheckInPage() {
               Daily Check-in
             </h1>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
-              {hasCheckedInToday 
+              {hasCheckedInToday
                 ? "You've already checked in today. Come back tomorrow!"
                 : "Take a moment to reflect on your day."
               }
@@ -430,10 +465,10 @@ export default function CheckInPage() {
                     <div className="grid grid-cols-5 gap-3">
                       {[
                         { key: 'restless', label: 'Restless' },
-                        { key: 'poor', label: 'Poor' },
-                        { key: 'neutral', label: 'Neutral' },
-                        { key: 'good', label: 'Good' },
-                        { key: 'excellent', label: 'Excellent' },
+                        { key: 'poor',     label: 'Poor'     },
+                        { key: 'neutral',  label: 'Neutral'  },
+                        { key: 'good',     label: 'Good'     },
+                        { key: 'excellent',label: 'Excellent'},
                       ].map(({ key, label }) => (
                         <div key={key} className="flex flex-col items-center gap-2">
                           <input type="checkbox" id={`sleep-${key}`} className="sleep-checkbox sr-only"
@@ -458,11 +493,11 @@ export default function CheckInPage() {
                     </div>
                     <div className="grid grid-cols-5 gap-3">
                       {[
-                        { key: 'sad', label: 'Sad' },
-                        { key: 'anxious', label: 'Anxious' },
-                        { key: 'neutral', label: 'Neutral' },
+                        { key: 'sad',      label: 'Sad'      },
+                        { key: 'anxious',  label: 'Anxious'  },
+                        { key: 'neutral',  label: 'Neutral'  },
                         { key: 'positive', label: 'Positive' },
-                        { key: 'happy', label: 'Happy' },
+                        { key: 'happy',    label: 'Happy'    },
                       ].map(({ key, label }) => (
                         <div key={key} className="flex flex-col items-center gap-2">
                           <input type="checkbox" id={`mood-${key}`} className="mood-checkbox sr-only"
@@ -487,10 +522,10 @@ export default function CheckInPage() {
                     </div>
                     <div className="grid grid-cols-5 gap-3">
                       {[
-                        { key: 'calm', label: 'Calm' },
-                        { key: 'tense', label: 'Tense' },
-                        { key: 'neutral', label: 'Neutral' },
-                        { key: 'moderate', label: 'Moderate' },
+                        { key: 'calm',        label: 'Calm'        },
+                        { key: 'tense',       label: 'Tense'       },
+                        { key: 'neutral',     label: 'Neutral'     },
+                        { key: 'moderate',    label: 'Moderate'    },
                         { key: 'overwhelmed', label: 'Overwhelmed' },
                       ].map(({ key, label }) => (
                         <div key={key} className="flex flex-col items-center gap-2">
@@ -548,9 +583,17 @@ export default function CheckInPage() {
                 <div className="mt-10 flex justify-end">
                   <button
                     onClick={handleSubmit}
-                    disabled={isSubmitting || hasCheckedInToday || !winsText.trim() || !Object.values(sleepQuality).some(v => v) || !Object.values(mood).some(v => v) || !Object.values(stressLevel).some(v => v)}
+                    disabled={
+                      isSubmitting || hasCheckedInToday || !winsText.trim() ||
+                      !Object.values(sleepQuality).some(v => v) ||
+                      !Object.values(mood).some(v => v) ||
+                      !Object.values(stressLevel).some(v => v)
+                    }
                     className={`font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
-                      !isSubmitting && winsText.trim() && Object.values(sleepQuality).some(v => v) && Object.values(mood).some(v => v) && Object.values(stressLevel).some(v => v)
+                      !isSubmitting && winsText.trim() &&
+                      Object.values(sleepQuality).some(v => v) &&
+                      Object.values(mood).some(v => v) &&
+                      Object.values(stressLevel).some(v => v)
                         ? "bg-primary text-on-primary hover:bg-primary-fixed-variant shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}

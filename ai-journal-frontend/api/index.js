@@ -13,7 +13,7 @@ app.post("/api/analyze", async (req, res) => {
   const { exercise, sleepQuality, mood, stressLevel, reflection } = req.body;
 
   const prompt = `
-You are a compassionate wellness AI. Based on this user's daily journal check-in, generate a personalized insight and a recommended schedule for tomorrow.
+You are a compassionate wellness AI. Based on this user's daily journal check-in, generate a personalized insight, a recommended schedule for tomorrow, and a brief history summary.
 
 User's check-in:
 - Exercise today: ${exercise ? "Yes" : "No"}
@@ -36,13 +36,17 @@ Respond ONLY with a valid JSON object in this exact format, no preamble, no mark
     { "time": "3:00 PM", "title": "Activity name", "subtitle": "Brief explanation" },
     { "time": "8:00 PM", "title": "Activity name", "subtitle": "Brief explanation" },
     { "time": "10:00 PM", "title": "Activity name", "subtitle": "Brief explanation" }
-  ]
+  ],
+  "summary": {
+    "emoji": "A single emoji that best represents the user's overall mood and energy for the day (e.g. 🌤️, 🌧️, ⚡, 🌙, ☀️, 🌫️, 🔥, 🌿)",
+    "preview": "A single sentence (max 15 words) summarizing the key insight for this entry, written in second person."
+  }
 }
 `;
 
   try {
     const message = await client.messages.create({
-      model: "claude-opus-4-5",
+      model: "claude-opus-4-6",
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     });
@@ -51,8 +55,8 @@ Respond ONLY with a valid JSON object in this exact format, no preamble, no mark
     const parsed = JSON.parse(raw);
     res.json(parsed);
   } catch (err) {
-    console.error("Error calling Anthropic:", err);
-    res.status(500).json({ error: "Failed to generate insight" });
+    console.error("Full error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
