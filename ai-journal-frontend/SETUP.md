@@ -6,7 +6,7 @@ This is a **frontend-only** React application that uses Firebase as the backend 
 
 - Node.js (version 18 or higher)
 - npm or yarn
-- A Firebase project (or access to the existing one)
+- Anthropic API key (for AI features)
 
 ## Setup Steps
 
@@ -18,35 +18,26 @@ npm install
 
 ### 2. Firebase Configuration
 
-The app is configured to use the Firebase project `aura-journal-845eb`. If you want to use your own Firebase project:
+**No setup required!** The app is already configured to use the Firebase project `aura-journal-845eb`. The Firebase connection works automatically for all developers.
 
-1. Create a new Firebase project at https://console.firebase.google.com
-2. Enable Authentication (Email/Password or Google Sign-In)
-3. Enable Firestore Database
-4. Get your Firebase configuration from the Firebase console
-5. Update the configuration in `src/config/firebase.js`:
+If you want to use your own Firebase project instead, you can update `src/config/firebase.js` with your project's configuration.
 
-```javascript
-const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.firebasestorage.app",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
-};
-```
+### 3. Environment Variables (REQUIRED)
 
-### 3. Environment Variables
+The application uses the Anthropic AI SDK for AI functionality. **Each developer must use their own API key**:
 
-The application uses the Anthropic AI SDK for AI functionality. You'll need to set up an Anthropic API key:
-
-1. Create a `.env.local` file in the root directory
-2. Add your Anthropic API key:
+1. Create a `.env` file in the root directory (this file is already gitignored)
+2. Get your own Anthropic API key from https://console.anthropic.com
+3. Add your API key to the `.env` file:
 
 ```
-ANTHROPIC_API_KEY=your-anthropic-api-key-here
+ANTHROPIC_API_KEY=your-personal-api-key-here
 ```
+
+**IMPORTANT**: 
+- Never share API keys between developers
+- Never commit `.env` files to version control
+- Each developer must obtain their own API key
 
 ### 4. Run the Development Server
 
