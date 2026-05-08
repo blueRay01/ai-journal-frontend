@@ -39,7 +39,7 @@ export default function DashboardPage() {
         {/* Greeting */}
         <div className="mb-4">
           <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary">
-            Good Morning, Klydel Asino.
+            Good Morning, Pasarpls.
           </h1>
           <p className="text-[18px] text-on-surface-variant mt-2 leading-relaxed">
             Take a moment to center yourself today.
