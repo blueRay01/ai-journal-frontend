@@ -69,12 +69,22 @@ const ALL_ENTRIES = [
 
 const PAGE_SIZE = 4;
 
+const FILTERS = ["All Time", "Past 7 Days", "Past Month", "Past 3 Months"];
+
 export default function HistoryPage() {
   const navigate = useNavigate();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [filterIndex, setFilterIndex] = useState(0);
+
+  const currentFilter = FILTERS[filterIndex];
+
+  const handleFilterCycle = () => {
+    setFilterIndex((prev) => (prev + 1) % FILTERS.length);
+  };
+
   const handleShowLess = () => {
-    setVisibleCount(PAGE_SIZE);
+    setVisibleCount(PAGE_SIZE);   
   };
 
   const visibleEntries = ALL_ENTRIES.slice(0, visibleCount);
@@ -104,9 +114,12 @@ export default function HistoryPage() {
               Your archival record of mood and energy.
             </p>
           </div>
-          <button className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-primary font-label-sm text-[13px] hover:bg-surface-variant transition-colors border-primary/10">
+          <button
+            onClick={handleFilterCycle}
+            className="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-primary font-label-sm text-[13px] border-primary/10 shadow-[0px_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0px_8px_20px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0px_4px_12px_rgba(0,0,0,0.08)] transition-all duration-200"
+          >
             <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-            All Time
+            {currentFilter}
           </button>
         </div>
 
@@ -116,7 +129,7 @@ export default function HistoryPage() {
           <div className="flex justify-between items-center">
             <h2 className="text-[16px] font-medium text-on-surface-variant tracking-wide">
               Entries
-            </h2>
+            </h2> 
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="flex items-center gap-1 text-primary text-[13px] font-medium hover:opacity-70 transition-opacity duration-200"
