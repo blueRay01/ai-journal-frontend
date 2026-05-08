@@ -1,11 +1,7 @@
 // src/components/dashboard/ActiveFocusCard.jsx
-import { useState } from "react";
-
 export default function ActiveFocusCard() {
-  const [joined, setJoined] = useState(true);
-
   return (
-    <div className="md:col-span-9 bg-[#2f4a35] rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden">
+    <div className="md:col-span-9 bg-[#2f4a35] rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden min-h-[140px]">
       {/* Subtle concentric circles decoration */}
       <svg
         className="absolute right-4 top-1/2 -translate-y-1/2 opacity-10 pointer-events-none"
@@ -42,24 +38,7 @@ export default function ActiveFocusCard() {
         </p>
       </div>
 
-      {/* Toggle + joiners */}
-      <div className="flex items-center gap-3">
-        {/* Toggle */}
-        <button
-          onClick={() => setJoined((v) => !v)}
-          className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${
-            joined ? "bg-[#6dbf77]" : "bg-[#3a5a40]"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${
-              joined ? "left-5" : "left-0.5"
-            }`}
-          />
-        </button>
-
-        <span className="text-[#8ab090] text-xs">3 others joining</span>
-      </div>
+  
     </div>
   );
 }
