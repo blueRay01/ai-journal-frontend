@@ -86,7 +86,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false); 
   
   const navigate = useNavigate();
-  const { login, signup } = useAuth(); // Destructuring both real Firebase functions
+  // We are pulling BOTH functions from your real Firebase Context here!
+  const { login, signup } = useAuth(); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
