@@ -4,7 +4,6 @@ import BottomNav from "../components/layout/BottomNav";
 import { useState } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 
-// Add styles
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
 
@@ -15,17 +14,9 @@ const styles = `
   }
 
   @keyframes handwritten-check {
-    0% {
-      stroke-dasharray: 0 100;
-      opacity: 0;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      stroke-dasharray: 100 0;
-      opacity: 1;
-    }
+    0% { stroke-dasharray: 0 100; opacity: 0; }
+    50% { opacity: 1; }
+    100% { stroke-dasharray: 100 0; opacity: 1; }
   }
 
   .animate-handwritten-check path:first-child {
@@ -36,12 +27,7 @@ const styles = `
     animation: handwritten-check 0.3s ease-in-out 0.1s both;
   }
 
-  /* Checked styling:
-     - Keep option containers visually neutral; only the checkmark indicates selection. */
-  .exercise-checkbox:checked + label {
-    background-color: transparent;
-  }
-
+  .exercise-checkbox:checked + label,
   .sleep-checkbox:checked + label,
   .mood-checkbox:checked + label,
   .stress-checkbox:checked + label {
@@ -55,10 +41,10 @@ const styles = `
     left: -10%;
     width: 50vw;
     height: 50vw;
-    background: radial-gradient(circle, rgba(173,207,178,0.3) 0%, rgba(250,243,225,0) 70%);
+    background: radial-gradient(circle, rgba(173,207,178,0.3) 0%, rgba(238,244,232,0) 70%);
     border-radius: 50%;
     filter: blur(60px);
-    z-index: -1;
+    z-index: 0;
     pointer-events: none;
   }
 
@@ -68,10 +54,10 @@ const styles = `
     right: -10%;
     width: 60vw;
     height: 60vw;
-    background: radial-gradient(circle, rgba(204,190,250,0.2) 0%, rgba(250,243,225,0) 70%);
+    background: radial-gradient(circle, rgba(204,190,250,0.15) 0%, rgba(245,245,239,0) 70%);
     border-radius: 50%;
     filter: blur(80px);
-    z-index: -1;
+    z-index: 0;
     pointer-events: none;
   }
 
@@ -85,7 +71,7 @@ const styles = `
     z-index: -1;
     border: 1px solid rgba(0,0,0,0.03);
   }
-  
+
   .book-page-under-2 {
     position: absolute;
     inset: 0;
@@ -96,7 +82,7 @@ const styles = `
     z-index: -2;
     border: 1px solid rgba(0,0,0,0.03);
   }
-  
+
   .book-page-under-3 {
     position: absolute;
     inset: 0;
@@ -194,159 +180,113 @@ const styles = `
   .toggle-checkbox:checked + .toggle-label::after {
     transform: translateX(24px);
   }
-
-  body {
-    background-color: #FAF3E1;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
-    min-height: 100vh;
-  }
 `;
 
-export default function CheckInPage() {
-    const navigate = useNavigate();
-    const [exerciseChecked, setExerciseChecked] = useState(false);
-    const [sleepQuality, setSleepQuality] = useState({
-        restless: false,
-        poor: false,
-        neutral: false,
-        good: false,
-        excellent: false
-    });
-    const [mood, setMood] = useState({
-        sad: false,
-        anxious: false,
-        neutral: false,
-        positive: false,
-        happy: false
-    });
-    const [stressLevel, setStressLevel] = useState({
-        calm: false,
-        tense: false,
-        neutral: false,
-        moderate: false,
-        high: false
-    });
-    const [winsText, setWinsText] = useState("");
+function CheckmarkSVG({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-handwritten-check">
+      <path d="M5 12L9 16" stroke="#27442f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="100" strokeDashoffset="0" />
+      <path d="M8.5 16L19 5" stroke="#27442f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="100" strokeDashoffset="0" />
+    </svg>
+  );
+}
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Handle form submission
-        console.log('Check-in submitted:', {
-            exerciseChecked,
-            sleepQuality,
-            mood,
-            stressLevel,
-            winsText
-        });
-        // Navigate to insights after submission
-        navigate('/insights');
-    };
+export default function CheckInPage() {
+  const navigate = useNavigate();
+  const [exerciseChecked, setExerciseChecked] = useState(false);
+  const [sleepQuality, setSleepQuality] = useState({ restless: false, poor: false, neutral: false, good: false, excellent: false });
+  const [mood, setMood] = useState({ sad: false, anxious: false, neutral: false, positive: false, happy: false });
+  const [stressLevel, setStressLevel] = useState({ calm: false, tense: false, neutral: false, moderate: false, overwhelmed: false });
+  const [winsText, setWinsText] = useState("");
+
+  const selectSingle = (setter, key) => setter(prev =>
+    Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
+  );
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    navigate('/insights');
+  };
+
+  const sectionCard = "p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-white/40";
+  const checkboxBase = "w-5 h-5 border-2 border-[#27442f] rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm";
 
   return (
     <>
-      
       <style>{styles}</style>
-      <div className="text-on-surface font-body-md relative overflow-x-clip pb-40">
+      <div
+        className="text-on-surface font-body-md relative overflow-x-clip pb-40 min-h-screen"
+        style={{ background: "linear-gradient(160deg, #eef4e8 0%, #fffde8 50%, #f5f5ef 100%)" }}
+      >
+        <div className="aura-tl" />
+        <div className="aura-br" />
 
-      {/* Atmospheric Auras */}
-      <div className="aura-tl"></div>
-      <div className="aura-br"></div>
-      <DashboardHeader />
+        <DashboardHeader />
 
-      <main className="max-w-[1400px] mx-auto px-4 md:px-8 mt-4 md:mt-12">
+        <main className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-[60px]">
 
-        {/* Header */}
-        <div className="mb-16 text-center drop-shadow-md">
-          <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">Daily Check-in</h1>
-          <p className="font-body-lg text-body-lg text-on-surface-variant">Take a moment to reflect on your day.</p>
-          <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-fixed/50 text-on-secondary-container font-label-sm text-label-sm border border-secondary-fixed-dim/30 shadow-sm">
-            <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
-            October 24, 2023
+          {/* Header */}
+          <div className="mb-16 mt-12 md:mt-20 text-center drop-shadow-md">
+            <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">
+              Daily Check-in
+            </h1>
+            <p className="font-body-lg text-body-lg text-on-surface-variant">
+              Take a moment to reflect on your day.
+            </p>
+            <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-white/40 backdrop-blur-sm text-on-surface-variant font-label-sm text-label-sm border border-white/60 shadow-sm">
+              <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
+              October 24, 2023
+            </div>
           </div>
-        </div>
 
-        {/* Open Journal Book Frame */}
-        <div className="relative w-full max-w-6xl mx-auto z-10">
-          {/* Book Pages Underneath */}
-          <div className="book-page-under-3"></div>
-          <div className="book-page-under-2"></div>
-          <div className="book-page-under-1"></div>
-          {/* Book binding aesthetic line */}
-          <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-outline-variant/10 via-outline-variant/40 to-outline-variant/10 hidden md:block z-20 shadow-inner"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
+          {/* Book frame */}
+          <div className="relative w-full max-w-6xl mx-auto z-10">
+            <div className="book-page-under-3" />
+            <div className="book-page-under-2" />
+            <div className="book-page-under-1" />
 
-            {/* Left Page */}
-            <div className="rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]" style={{ 
-              background: 'rgba(253, 250, 246, 0.75)', 
-              border: '1px solid rgba(255, 255, 255, 0.9)', 
-              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)'
-            }}>
-              <div className="space-y-8">
-                {/* Exercise Section */}
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-outline-variant/20">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-2xl">fitness_center</span>
-                    <div>
-                      <h3 className="font-headline-md text-headline-md text-primary">Exercise</h3>
-                      <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Did you move your body today?</p>
+            {/* Binding line */}
+            <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-black/5 via-black/15 to-black/5 hidden md:block z-20" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
+
+              {/* ── Left Page ── */}
+              <div
+                className="rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]"
+                style={{
+                  background: 'rgba(253, 250, 246, 0.75)',
+                  border: '1px solid rgba(255,255,255,0.9)',
+                  boxShadow: '0 30px 60px -15px rgba(0,0,0,0.15), 0 10px 20px -10px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
+                <div className="space-y-8">
+
+                  {/* Exercise */}
+                  <div className={`${sectionCard} flex items-center justify-between`}>
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-primary text-2xl">fitness_center</span>
+                      <div>
+                        <h3 className="font-headline-md text-headline-md text-primary">Exercise</h3>
+                        <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Did you move your body today?</p>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <input type="checkbox" id="exercise-checkbox" className="exercise-checkbox sr-only"
+                        checked={exerciseChecked} onChange={(e) => setExerciseChecked(e.target.checked)} />
+                      <label htmlFor="exercise-checkbox"
+                        className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer bg-white/50 backdrop-blur-sm">
+                        {exerciseChecked && <CheckmarkSVG size={20} />}
+                      </label>
                     </div>
                   </div>
-                  <div className="relative">
-                    <input 
-                      type="checkbox"
-                      id="exercise-checkbox"
-                      className="exercise-checkbox sr-only"
-                      checked={exerciseChecked}
-                      onChange={(e) => setExerciseChecked(e.target.checked)}
-                    />
-                    <label
-                      htmlFor="exercise-checkbox"
-                      className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer bg-white/50 backdrop-blur-sm"
-                    >
-                      {exerciseChecked && (
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className="text-primary animate-handwritten-check"
-                        >
-                          {/* First stroke of the checkmark */}
-                          <path
-                            d="M5 12L9 16"
-                            stroke="#27442f"
-                            strokeWidth="2.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeDasharray="100"
-                            strokeDashoffset="0"
-                          />
-                          {/* Second stroke of the checkmark - overlapping */}
-                          <path
-                            d="M8.5 16L19 5"
-                            stroke="#27442f"
-                            strokeWidth="2.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeDasharray="100"
-                            strokeDashoffset="0"
-                          />
-                        </svg>
-                      )}
-                    </label>
-                  </div>
-                </div>
 
-                {/* Sleep Quality */}
-                <div className="p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-outline-variant/20">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 mb-3">
+                  {/* Sleep Quality */}
+                  <div className={sectionCard}>
+                    <div className="flex items-center gap-3 mb-4">
                       <span className="material-symbols-outlined text-primary text-2xl">bedtime</span>
-                      <div>
-                        <h3 className="font-headline-md text-headline-md text-primary">Sleep Quality</h3>
-                      </div>
+                      <h3 className="font-headline-md text-headline-md text-primary">Sleep Quality</h3>
                     </div>
                     <div className="grid grid-cols-5 gap-3">
                       {[
@@ -354,87 +294,28 @@ export default function CheckInPage() {
                         { key: 'poor', label: 'Poor' },
                         { key: 'neutral', label: 'Neutral' },
                         { key: 'good', label: 'Good' },
-                        { key: 'excellent', label: 'Excellent' }
-                      ].map((option) => (
-                        <div key={option.key} className="flex flex-col items-center gap-2">
-                          <input 
-                            type="checkbox"
-                            id={`sleep-${option.key}`}
-                            className="sleep-checkbox sr-only"
-                            checked={sleepQuality[option.key]}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSleepQuality({
-                                  restless: false,
-                                  poor: false,
-                                  neutral: false,
-                                  good: false,
-                                  excellent: false,
-                                  [option.key]: true
-                                });
-                              } else {
-                                setSleepQuality(prev => ({
-                                  ...prev,
-                                  [option.key]: false
-                                }));
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`sleep-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg relative"
-                          >
-                            <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
-                              {sleepQuality[option.key] && (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  className="text-primary animate-handwritten-check"
-                                >
-                                  {/* First stroke of the checkmark */}
-                                  <path
-                                    d="M5 12L9 16"
-                                    stroke="#27442f"
-                                    strokeWidth="2.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeDasharray="100"
-                                    strokeDashoffset="0"
-                                  />
-                                  {/* Second stroke of the checkmark - overlapping */}
-                                  <path
-                                    d="M8.5 16L19 5"
-                                    stroke="#27442f"
-                                    strokeWidth="2.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeDasharray="100"
-                                    strokeDashoffset="0"
-                                  />
-                                </svg>
-                              )}
+                        { key: 'excellent', label: 'Excellent' },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col items-center gap-2">
+                          <input type="checkbox" id={`sleep-${key}`} className="sleep-checkbox sr-only"
+                            checked={sleepQuality[key]}
+                            onChange={() => selectSingle(setSleepQuality, key)} />
+                          <label htmlFor={`sleep-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
+                            <div className={checkboxBase}>
+                              {sleepQuality[key] && <CheckmarkSVG size={14} />}
                             </div>
-                            <span className="text-xs text-on-surface-variant text-center font-medium relative">
-                              <span className="absolute inset-0 opacity-10 blur-sm">{option.label}</span>
-                              <span className="relative z-10">{option.label}</span>
-                            </span>
+                            <span className="text-xs text-on-surface-variant text-center font-medium">{label}</span>
                           </label>
                         </div>
                       ))}
                     </div>
                   </div>
-                </div>
 
-                {/* Mood */}
-                <div className="p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-outline-variant/20">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 mb-3">
+                  {/* Mood */}
+                  <div className={sectionCard}>
+                    <div className="flex items-center gap-3 mb-4">
                       <span className="material-symbols-outlined text-primary text-2xl">mood</span>
-                      <div>
-                        <h3 className="font-headline-md text-headline-md text-primary">Mood</h3>
-                      </div>
+                      <h3 className="font-headline-md text-headline-md text-primary">Mood</h3>
                     </div>
                     <div className="grid grid-cols-5 gap-3">
                       {[
@@ -442,87 +323,28 @@ export default function CheckInPage() {
                         { key: 'anxious', label: 'Anxious' },
                         { key: 'neutral', label: 'Neutral' },
                         { key: 'positive', label: 'Positive' },
-                        { key: 'happy', label: 'Happy' }
-                      ].map((option) => (
-                        <div key={option.key} className="flex flex-col items-center gap-2">
-                          <input 
-                            type="checkbox"
-                            id={`mood-${option.key}`}
-                            className="mood-checkbox sr-only"
-                            checked={mood[option.key]}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setMood({
-                                  sad: false,
-                                  anxious: false,
-                                  neutral: false,
-                                  positive: false,
-                                  happy: false,
-                                  [option.key]: true
-                                });
-                              } else {
-                                setMood(prev => ({
-                                  ...prev,
-                                  [option.key]: false
-                                }));
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`mood-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg relative"
-                          >
-                            <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
-                              {mood[option.key] && (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  className="text-primary animate-handwritten-check"
-                                >
-                                  {/* First stroke of the checkmark */}
-                                  <path
-                                    d="M5 12L9 16"
-                                    stroke="#27442f"
-                                    strokeWidth="2.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeDasharray="100"
-                                    strokeDashoffset="0"
-                                  />
-                                  {/* Second stroke of the checkmark - overlapping */}
-                                  <path
-                                    d="M8.5 16L19 5"
-                                    stroke="#27442f"
-                                    strokeWidth="2.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeDasharray="100"
-                                    strokeDashoffset="0"
-                                  />
-                                </svg>
-                              )}
+                        { key: 'happy', label: 'Happy' },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col items-center gap-2">
+                          <input type="checkbox" id={`mood-${key}`} className="mood-checkbox sr-only"
+                            checked={mood[key]}
+                            onChange={() => selectSingle(setMood, key)} />
+                          <label htmlFor={`mood-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
+                            <div className={checkboxBase}>
+                              {mood[key] && <CheckmarkSVG size={14} />}
                             </div>
-                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center relative">
-                              <span className="absolute inset-0 opacity-10 blur-sm">{option.label}</span>
-                              <span className="relative z-10">{option.label}</span>
-                            </span>
+                            <span className="text-xs text-on-surface-variant text-center font-medium">{label}</span>
                           </label>
                         </div>
                       ))}
                     </div>
                   </div>
-                </div>
 
-                {/* Stress Level */}
-                <div className="p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-outline-variant/20">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 mb-3">
+                  {/* Stress Level */}
+                  <div className={sectionCard}>
+                    <div className="flex items-center gap-3 mb-4">
                       <span className="material-symbols-outlined text-primary text-2xl">waves</span>
-                      <div>
-                        <h3 className="font-headline-md text-headline-md text-primary">Stress Level</h3>
-                      </div>
+                      <h3 className="font-headline-md text-headline-md text-primary">Stress Level</h3>
                     </div>
                     <div className="grid grid-cols-5 gap-3">
                       {[
@@ -530,121 +352,75 @@ export default function CheckInPage() {
                         { key: 'tense', label: 'Tense' },
                         { key: 'neutral', label: 'Neutral' },
                         { key: 'moderate', label: 'Moderate' },
-                        { key: 'overwhelmed', label: 'Overwhelmed' }
-                      ].map((option) => (
-                        <div key={option.key} className="flex flex-col items-center gap-2">
-                          <input 
-                            type="checkbox"
-                            id={`stress-${option.key}`}
-                            className="stress-checkbox sr-only"
-                            checked={stressLevel[option.key]}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setStressLevel({
-                                  calm: false,
-                                  tense: false,
-                                  neutral: false,
-                                  overwhelmed: false,
-                                  [option.key]: true
-                                });
-                              } else {
-                                setStressLevel(prev => ({
-                                  ...prev,
-                                  [option.key]: false
-                                }));
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`stress-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg relative"
-                          >
-                            <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
-                              {stressLevel[option.key] && (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  className="text-primary animate-handwritten-check"
-                                >
-                                  {/* First stroke of the checkmark */}
-                                  <path
-                                    d="M5 12L9 16"
-                                    stroke="#27442f"
-                                    strokeWidth="2.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeDasharray="100"
-                                    strokeDashoffset="0"
-                                  />
-                                  {/* Second stroke of the checkmark - overlapping */}
-                                  <path
-                                    d="M8.5 16L19 5"
-                                    stroke="#27442f"
-                                    strokeWidth="2.8"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeDasharray="100"
-                                    strokeDashoffset="0"
-                                  />
-                                </svg>
-                              )}
+                        { key: 'overwhelmed', label: 'Overwhelmed' },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col items-center gap-2">
+                          <input type="checkbox" id={`stress-${key}`} className="stress-checkbox sr-only"
+                            checked={stressLevel[key]}
+                            onChange={() => selectSingle(setStressLevel, key)} />
+                          <label htmlFor={`stress-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
+                            <div className={checkboxBase}>
+                              {stressLevel[key] && <CheckmarkSVG size={14} />}
                             </div>
-                            <span className="font-label-sm text-label-sm text-on-surface-variant text-center relative">
-                              <span className="absolute inset-0 opacity-10 blur-sm">{option.label}</span>
-                              <span className="relative z-10">{option.label}</span>
-                            </span>
+                            <span className="text-xs text-on-surface-variant text-center font-medium">{label}</span>
                           </label>
                         </div>
                       ))}
                     </div>
                   </div>
+
                 </div>
               </div>
-            </div>
 
-            {/* Right Page */}
-            <div className="rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col" style={{ 
-              background: 'rgba(253, 250, 246, 0.75)', 
-              border: '1px solid rgba(255, 255, 255, 0.9)', 
-              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)'
-            }}>
-              <div className="flex-grow flex flex-col h-full">
-                {/* Text Area */}
+              {/* ── Right Page ── */}
+              <div
+                className="rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col"
+                style={{
+                  background: 'rgba(253, 250, 246, 0.75)',
+                  border: '1px solid rgba(255,255,255,0.9)',
+                  boxShadow: '0 30px 60px -15px rgba(0,0,0,0.15), 0 10px 20px -10px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
                 <div className="flex-grow flex flex-col h-full">
                   <div className="flex justify-between items-end mb-4">
                     <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
                       <span className="material-symbols-outlined">edit_note</span> Reflection
                     </h3>
                   </div>
-                  <div className="glass-input rounded-xl flex-grow h-full p-1 relative shadow-inner" style={{ background: 'linear-gradient(180deg, rgba(246, 243, 239, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)', border: '0.5px solid rgba(114, 121, 114, 0.2)' }}>
-                    <textarea 
-                      className="w-full h-full bg-transparent border-none resize-none p-4 text-on-surface focus:ring-0 placeholder:text-outline-variant/70 handwritten-text" 
+                  <div
+                    className="glass-input rounded-xl flex-grow h-full p-1 relative shadow-inner"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(246,243,239,0.5) 0%, rgba(255,255,255,0.8) 100%)',
+                      border: '0.5px solid rgba(114,121,114,0.2)',
+                    }}
+                  >
+                    <textarea
+                      className="w-full h-full bg-transparent border-none resize-none p-4 text-on-surface focus:ring-0 placeholder:text-outline-variant/70 handwritten-text"
                       placeholder="Write a short reflection about your day..."
                       value={winsText}
                       onChange={(e) => setWinsText(e.target.value)}
                     />
                   </div>
                 </div>
+
+                <div className="mt-10 flex justify-end">
+                  <button
+                    onClick={handleSubmit}
+                    className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-all shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
+                  >
+                    Submit Entry
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
+                </div>
               </div>
-              <div className="mt-10 flex justify-end">
-                <button 
-                  onClick={handleSubmit}
-                  className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-colors shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
-                >
-                  Submit Entry
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </button>
-              </div>
+
             </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <BottomNav activePage="checkin" onNavigate={navigate} />
+        <BottomNav activePage="checkin" onNavigate={navigate} />
       </div>
     </>
   );

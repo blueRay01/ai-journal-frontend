@@ -95,14 +95,17 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="text-on-surface font-body-md antialiased min-h-screen relative flex flex-col items-center pb-32 overflow-x-hidden">
+    <div 
+      className="text-on-surface font-body-md antialiased min-h-screen relative flex flex-col items-center pb-32 overflow-x-hidden"
+      style={{ background: "linear-gradient(160deg, rgb(238, 244, 232) 0%, rgb(255, 255, 255) 50%, rgb(245, 245, 239) 100%)" }}
+    >
 
       <div className="aura-top-right" />
       <div className="aura-bottom-left" />
 
       <DashboardHeader />
 
-      <main className="w-full max-w-3xl mx-auto px-4 md:px-12 flex flex-col gap-8 flex-grow z-10 pt-4">
+      <main className="w-full max-w-3xl mx-auto px-4 md:px-12 pt-32 pb-32 flex flex-col gap-8 flex-grow z-10">
 
         {/* Page heading + filter */}
         <div className="flex justify-between items-end">

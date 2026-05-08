@@ -15,10 +15,20 @@ import { useMemo, useState } from "react";
  */
 
 function scoreVariant(score) {
-  // High score → secondary (purple), low score → tertiary (warm brown)
-  return score >= 6
-    ? "bg-secondary/15 text-secondary"
-    : "bg-secondary/15 text-secondary";
+  // Score-based color mapping using brand colors:
+  // 8-10: Excellent - Primary Green
+  // 6-7: Good - Secondary Teal  
+  // 4-5: Average - Warm Amber
+  // 1-3: Poor - Soft Rose
+  if (score >= 8) {
+    return "bg-primary/10 text-primary border-primary/20";
+  } else if (score >= 6) {
+    return "bg-secondary/10 text-secondary border-secondary/20";
+  } else if (score >= 4) {
+    return "bg-amber-50 text-amber-700 border-amber-200";
+  } else {
+    return "bg-rose-50 text-rose-700 border-rose-200";
+  }
 }
 
 export default function EntryRow({ emoji, timestamp, score, preview, onClick }) {
