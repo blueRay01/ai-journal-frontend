@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 .env
 
-api/.env
+ai-journal-frontend/api/.env
