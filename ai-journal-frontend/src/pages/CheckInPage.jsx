@@ -4,7 +4,8 @@ import BottomNav from "../components/layout/BottomNav";
 import { useState, useEffect } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import { useAuth } from "../contexts/AuthContext";
-import { saveJournalEntry } from "../services/journalService";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
@@ -228,9 +229,50 @@ export default function CheckInPage() {
     Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/insights');
+    
+    if (!user) {
+      console.error('No user logged in');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // Get selected values from state objects
+      const selectedSleepQuality = Object.keys(sleepQuality).find(key => sleepQuality[key]);
+      const selectedMood = Object.keys(mood).find(key => mood[key]);
+      const selectedStressLevel = Object.keys(stressLevel).find(key => stressLevel[key]);
+
+      // Create journal entry object
+      const journalEntry = {
+        userId: user.uid,
+        exercise: exerciseChecked,
+        sleepQuality: selectedSleepQuality || 'neutral',
+        mood: selectedMood || 'neutral',
+        stressLevel: selectedStressLevel || 'neutral',
+        reflection: winsText.trim(),
+        date: currentDate.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        createdAt: serverTimestamp()
+      };
+
+      // Save to Firestore
+      const docRef = await addDoc(collection(db, "journalEntries"), journalEntry);
+      console.log("Journal entry saved with ID:", docRef.id);
+
+      // Navigate to insights after successful save
+      navigate('/insights');
+    } catch (error) {
+      console.error("Error saving journal entry:", error);
+      // You could show an error message to the user here
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const sectionCard = "p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-white/40";
