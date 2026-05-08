@@ -1,5 +1,5 @@
 // src/components/insight/InsightImage.jsx
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // Insight type configurations with corresponding images and symbols
 const INSIGHT_TYPES = {
@@ -9,7 +9,7 @@ const INSIGHT_TYPES = {
     symbols: ["routine", "directions_walk", "wb_sunny"]
   },
   stress_management: {
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=1200&fit=crop",
+    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&h=1200&fit=crop",
     alt: "A peaceful lake with calm waters reflecting mountains at sunset. The serene atmosphere promotes relaxation and stress relief.",
     symbols: ["self_improvement", "water_drop", "spa"]
   },
@@ -19,7 +19,7 @@ const INSIGHT_TYPES = {
     symbols: ["bedtime", "nights_stay", "cloud"]
   },
   mood_improvement: {
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=1200&fit=crop",
+    image: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=800&h=1200&fit=crop",
     alt: "A vibrant sunrise over mountains symbolizing hope and positive mood changes.",
     symbols: ["mood", "light_mode", "emoji_emotions"]
   },
@@ -37,36 +37,53 @@ const INSIGHT_TYPES = {
 
 export default function InsightImage({ insightType = "morning_routine" }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [currentImage, setCurrentImage] = useState(insightType);
+  const [currentImageKey, setCurrentImageKey] = useState(insightType);
   const [currentSymbols, setCurrentSymbols] = useState(INSIGHT_TYPES[insightType]?.symbols || []);
   const [currentAlt, setCurrentAlt] = useState(INSIGHT_TYPES[insightType]?.alt || "");
+  const lastImageUrlRef = useRef(INSIGHT_TYPES[insightType]?.image || INSIGHT_TYPES.morning_routine.image);
 
-  const insightConfig = INSIGHT_TYPES[insightType] || INSIGHT_TYPES.morning_routine;
+  const currentImageUrl = useMemo(() => {
+    const cfg = INSIGHT_TYPES[currentImageKey] || INSIGHT_TYPES.morning_routine;
+    return cfg.image || INSIGHT_TYPES.morning_routine.image;
+  }, [currentImageKey]);
 
   useEffect(() => {
-    if (insightType !== currentImage) {
-      // Start fade out
-      setIsTransitioning(true);
-      
-      // After fade out, change content and fade in
-      setTimeout(() => {
-        setCurrentImage(insightType);
-        setCurrentSymbols(insightConfig.symbols);
-        setCurrentAlt(insightConfig.alt);
-        setIsTransitioning(false);
-      }, 500); // Half of transition duration for fade out
+    if (insightType === currentImageKey) return;
+
+    const nextConfig = INSIGHT_TYPES[insightType] || INSIGHT_TYPES.morning_routine;
+    const nextUrl = nextConfig.image || INSIGHT_TYPES.morning_routine.image;
+
+    // If the next image URL equals the current, don't animate a "transition to itself".
+    if (nextUrl === lastImageUrlRef.current) {
+      setCurrentImageKey(insightType);
+      setCurrentSymbols(nextConfig.symbols || []);
+      setCurrentAlt(nextConfig.alt || "");
+      setIsTransitioning(false);
+      return;
     }
-  }, [insightType, currentImage, insightConfig]);
+
+    setIsTransitioning(true);
+
+    const timer = setTimeout(() => {
+      lastImageUrlRef.current = nextUrl;
+      setCurrentImageKey(insightType);
+      setCurrentSymbols(nextConfig.symbols || []);
+      setCurrentAlt(nextConfig.alt || "");
+      setIsTransitioning(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [insightType, currentImageKey]);
 
   return (
     <>
-      <div className="w-full rounded-2xl overflow-hidden shadow-2xl relative border border-white/20 aspect-[4/5] md:aspect-auto md:h-[500px]">
+      <div className="w-full rounded-2xl overflow-hidden shadow-2xl relative border border-white/20 aspect-4/5 md:aspect-auto md:h-[500px]">
         <img 
           alt={currentAlt}
           className={`w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
             isTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
-          src={INSIGHT_TYPES[currentImage]?.image || INSIGHT_TYPES.morning_routine.image}
+          src={currentImageUrl}
           onError={(e) => {
             // Fallback to a working image if current one fails
             e.target.src = "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=1200&fit=crop";

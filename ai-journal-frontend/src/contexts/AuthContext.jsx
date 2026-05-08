@@ -22,16 +22,19 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   // Firebase automatically checks for existing sessions
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthenticated(!!currentUser); // true if user exists, false if null
-      setLoading(false);
-    });
+    const storedAuth = localStorage.getItem("isAuthenticated");
+    const storedUser = localStorage.getItem("user");
+    
+    if (storedAuth === "true" && storedUser) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(storedUser));
+    }
 
-    return unsubscribe; // Cleanup on unmount
+    setAuthReady(true);
   }, []);
 
   const login = (email, password) => {
@@ -43,10 +46,16 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    return signOut(auth);
+    console.log("Logout function called - clearing auth state");
+    setIsAuthenticated(false);
+    setUser(null);
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("user");
+    console.log("Logout completed - auth state cleared");
   };
 
   const value = {
+    authReady,
     isAuthenticated,
     user,
     login,

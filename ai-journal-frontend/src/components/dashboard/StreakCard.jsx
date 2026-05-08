@@ -1,7 +1,8 @@
 // src/components/dashboard/StreakCard.jsx
 
 const STREAK_DAYS = 12;
-const FILLED_DOTS = 3; // how many of the 5 indicator dots are active
+const FILLED_DOTS = 3; // how many of the 7 indicator bars are active
+const STREAK_BARS = 7;
 
 export default function StreakCard() {
   return (
@@ -26,7 +27,7 @@ export default function StreakCard() {
 
       {/* Progress dots */}
       <div className="mt-4 flex gap-1">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: STREAK_BARS }).map((_, i) => (
           <div
             key={i}
             className={`w-8 h-1 rounded-full ${

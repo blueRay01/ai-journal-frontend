@@ -1,10 +1,12 @@
 // src/components/layout/Navbar.jsx
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   
@@ -23,9 +25,12 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    // In a real app, this would handle logout logic
-    navigate('/auth');
+    console.log("Navbar: Logout button clicked");
+    console.log("Navbar: Calling logout function...");
+    logout();
     setIsDropdownOpen(false);
+    console.log("Navbar: Logout completed, dropdown closed");
+    navigate("/auth", { replace: true });
   };
 
   return (

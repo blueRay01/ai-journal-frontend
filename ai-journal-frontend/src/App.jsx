@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/layout/Navbar";
@@ -12,46 +12,22 @@ import HistoryPage from "./pages/HistoryPage";
 import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 import AIInsightPage from "./pages/AIInsightPage";
-import { useState, useEffect } from "react";
-
-function FadeTransition({ children }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    setIsVisible(false);
-    const timer = setTimeout(() => setIsVisible(true), 50);
-    return () => clearTimeout(timer);
-  }, [location]);
-
-  return (
-    <div 
-      className={`transition-opacity duration-500 ease-in-out ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
 
 function LandingPage() {
   return (
-    <FadeTransition>
-      <div className="bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-200 font-body relative overflow-x-hidden min-h-screen">
-        <div className="texture-overlay bg-paper-texture" />
-        <div className="fixed inset-0 bg-aura-gradient dark:bg-aura-gradient-dark pointer-events-none -z-10" />
+    <div className="bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-200 font-body relative overflow-x-hidden min-h-screen">
+      <div className="texture-overlay bg-paper-texture" />
+      <div className="fixed inset-0 bg-aura-gradient dark:bg-aura-gradient-dark pointer-events-none -z-10" />
 
-        <Navbar />
+      <Navbar />
 
-        <main className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <HeroSection />
-          <FeaturesSection />
-        </main>
+      <main className="pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <HeroSection />
+        <FeaturesSection />
+      </main>
 
-        <Footer />
-      </div>
-    </FadeTransition>
+      <Footer />
+    </div>
   );
 }
 
@@ -61,56 +37,46 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/auth" element={<FadeTransition><AuthPage /></FadeTransition>} />
-          <Route 
-            path="/dashboard" 
+          <Route path="/auth" element={<AuthPage />} />
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
-                <FadeTransition>
-                  <DashboardPage />
-                </FadeTransition>
+                <DashboardPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/history" 
+          <Route
+            path="/history"
             element={
               <ProtectedRoute>
-                <FadeTransition>
-                  <HistoryPage />
-                </FadeTransition>
+                <HistoryPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/report" 
+          <Route
+            path="/report"
             element={
               <ProtectedRoute>
-                <FadeTransition>
-                  <ReportPage />
-                </FadeTransition>
+                <ReportPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/checkin" 
+          <Route
+            path="/checkin"
             element={
               <ProtectedRoute>
-                <FadeTransition>
-                  <CheckInPage />
-                </FadeTransition>
+                <CheckInPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/insights" 
+          <Route
+            path="/insights"
             element={
               <ProtectedRoute>
-                <FadeTransition>
-                  <AIInsightPage />
-                </FadeTransition>
+                <AIInsightPage />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

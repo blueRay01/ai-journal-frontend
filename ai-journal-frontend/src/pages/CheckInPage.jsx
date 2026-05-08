@@ -36,12 +36,17 @@ const styles = `
     animation: handwritten-check 0.3s ease-in-out 0.1s both;
   }
 
-  .exercise-checkbox:checked + label,
+  /* Checked styling:
+     - Keep option containers visually neutral; only the checkmark indicates selection. */
+  .exercise-checkbox:checked + label {
+    background-color: transparent;
+  }
+
   .sleep-checkbox:checked + label,
   .mood-checkbox:checked + label,
   .stress-checkbox:checked + label {
-    background-color: rgba(39, 68, 47, 0.1);
-    border-color: #27442f;
+    background-color: transparent;
+    border-color: transparent;
   }
 
   .aura-tl {
@@ -298,7 +303,7 @@ export default function CheckInPage() {
                     />
                     <label
                       htmlFor="exercise-checkbox"
-                      className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/70"
+                      className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer bg-white/50 backdrop-blur-sm"
                     >
                       {exerciseChecked && (
                         <svg
@@ -358,14 +363,27 @@ export default function CheckInPage() {
                             id={`sleep-${option.key}`}
                             className="sleep-checkbox sr-only"
                             checked={sleepQuality[option.key]}
-                            onChange={(e) => setSleepQuality(prev => ({
-                              ...prev,
-                              [option.key]: e.target.checked
-                            }))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSleepQuality({
+                                  restless: false,
+                                  poor: false,
+                                  neutral: false,
+                                  good: false,
+                                  excellent: false,
+                                  [option.key]: true
+                                });
+                              } else {
+                                setSleepQuality(prev => ({
+                                  ...prev,
+                                  [option.key]: false
+                                }));
+                              }
+                            }}
                           />
                           <label
                             htmlFor={`sleep-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none transition-all duration-300 hover:opacity-80 p-2 rounded-lg border-2 border-transparent hover:border-primary/30"
+                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg"
                           >
                             <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
                               {sleepQuality[option.key] && (
@@ -431,14 +449,27 @@ export default function CheckInPage() {
                             id={`mood-${option.key}`}
                             className="mood-checkbox sr-only"
                             checked={mood[option.key]}
-                            onChange={(e) => setMood(prev => ({
-                              ...prev,
-                              [option.key]: e.target.checked
-                            }))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setMood({
+                                  sad: false,
+                                  anxious: false,
+                                  neutral: false,
+                                  positive: false,
+                                  happy: false,
+                                  [option.key]: true
+                                });
+                              } else {
+                                setMood(prev => ({
+                                  ...prev,
+                                  [option.key]: false
+                                }));
+                              }
+                            }}
                           />
                           <label
                             htmlFor={`mood-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none transition-all duration-300 hover:opacity-80 p-2 rounded-lg border-2 border-transparent hover:border-primary/30"
+                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg"
                           >
                             <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
                               {mood[option.key] && (
@@ -503,14 +534,26 @@ export default function CheckInPage() {
                             id={`stress-${option.key}`}
                             className="stress-checkbox sr-only"
                             checked={stressLevel[option.key]}
-                            onChange={(e) => setStressLevel(prev => ({
-                              ...prev,
-                              [option.key]: e.target.checked
-                            }))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setStressLevel({
+                                  calm: false,
+                                  tense: false,
+                                  neutral: false,
+                                  overwhelmed: false,
+                                  [option.key]: true
+                                });
+                              } else {
+                                setStressLevel(prev => ({
+                                  ...prev,
+                                  [option.key]: false
+                                }));
+                              }
+                            }}
                           />
                           <label
                             htmlFor={`stress-${option.key}`}
-                            className="flex flex-col items-center gap-1 cursor-pointer select-none transition-all duration-300 hover:opacity-80 p-2 rounded-lg border-2 border-transparent hover:border-primary/30"
+                            className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg"
                           >
                             <div className="w-5 h-5 border-2 border-primary rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm">
                               {stressLevel[option.key] && (
@@ -567,13 +610,13 @@ export default function CheckInPage() {
                 <div className="flex-grow flex flex-col h-full">
                   <div className="flex justify-between items-end mb-4">
                     <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-                      <span className="material-symbols-outlined">edit_note</span> Wins
+                      <span className="material-symbols-outlined">edit_note</span> Reflection
                     </h3>
                   </div>
                   <div className="glass-input rounded-xl flex-grow h-full p-1 relative shadow-inner" style={{ background: 'linear-gradient(180deg, rgba(246, 243, 239, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)', border: '0.5px solid rgba(114, 121, 114, 0.2)' }}>
                     <textarea 
                       className="w-full h-full bg-transparent border-none resize-none p-4 text-on-surface focus:ring-0 placeholder:text-outline-variant/70 handwritten-text" 
-                      placeholder="Any wins today? Big or small, write them down..."
+                      placeholder="Write a short reflection about your day..."
                       value={winsText}
                       onChange={(e) => setWinsText(e.target.value)}
                     />
