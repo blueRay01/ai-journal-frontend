@@ -1,76 +1,143 @@
 // src/pages/AIInsightPage.jsx
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import InsightContent from "../components/insight/InsightContent";
 import InsightBackground from "../components/insight/InsightBackground";
 import BottomNav from "../components/layout/BottomNav";
 import DashboardHeader from "../components/layout/DashboardHeader";
+import { useAuth } from "../contexts/AuthContext";
+import { db } from "../config/firebase";
+import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 
-// Sample insight data - in a real app, this would come from AI analysis
-const SAMPLE_INSIGHTS = [
-  {
-    id: 1,
-    type: "morning_routine",
-    title: "A Moment of Clarity",
-    content: "Based on your recent entries, we noticed a beautiful pattern. Your focus and sense of calm consistently peak on days you complete your morning walk before 8 AM."
-  },
-  {
-    id: 2,
-    type: "stress_management",
-    title: "Stress Relief Through Nature",
-    content: "Your journal entries show that spending time in nature significantly reduces your stress levels. Consider adding more outdoor activities to your routine."
-  },
-  {
-    id: 3,
-    type: "sleep_quality",
-    title: "Sleep and Performance Connection",
-    content: "We've noticed that nights with 7+ hours of sleep consistently lead to better mood and productivity the following day."
-  },
-  {
-    id: 4,
-    type: "mood_improvement",
-    title: "Positive Momentum Building",
-    content: "Your mood has been steadily improving over the past week. This positive trend correlates with your increased physical activity."
-  },
-  {
-    id: 5,
-    type: "exercise_consistency",
-    title: "Consistency is Key",
-    content: "Even short 15-minute exercise sessions are contributing significantly to your overall wellbeing and energy levels."
-  },
-  {
-    id: 6,
-    type: "energy_levels",
-    title: "Energy Flow Optimization",
-    content: "Your energy levels peak in the late morning. Consider scheduling important tasks during this optimal window."
-  }
-];
+function normalizeTimeline(raw) {
+  if (!raw) return [];
 
-const styles = `
-  body {
-    background-color: #FDFAF6;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
-    min-height: 100vh;
+  let value = raw;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      // If it's just a plain string, we can't meaningfully render as a timeline.
+      return [];
+    }
   }
-`;
+
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(Boolean)
+    .map((item) => {
+      if (typeof item === "string") {
+        return { time: "", title: item, subtitle: "" };
+      }
+      return {
+        time: item.time || item.startTime || item.when || "",
+        title: item.title || item.activity || item.name || "Activity",
+        subtitle: item.subtitle || item.note || item.description || "",
+      };
+    });
+}
+
+function normalizeInsight(entryData) {
+  const ai =
+    entryData?.aiInsight ??
+    entryData?.insight ??
+    entryData?.ai ??
+    entryData?.analysis ??
+    null;
+
+  if (!ai) {
+    return {
+      type: entryData?.insightType || "morning_routine",
+      title: "",
+      content: "",
+    };
+  }
+
+  if (typeof ai === "string") {
+    return {
+      type: entryData?.insightType || "morning_routine",
+      title: "Your AI Insight",
+      content: ai,
+    };
+  }
+
+  return {
+    type: ai.type || entryData?.insightType || "morning_routine",
+    title: ai.title || "Your AI Insight",
+    content: ai.content || ai.text || ai.message || "",
+  };
+}
 
 export default function AIInsightPage() {
   const navigate = useNavigate();
-  const [currentInsight, setCurrentInsight] = useState(SAMPLE_INSIGHTS[0]);
+  const location = useLocation();
+  const { user } = useAuth();
+  const [insight, setInsight] = useState({ type: "morning_routine", title: "", content: "" });
+  const [timeline, setTimeline] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // In a real app, this would fetch insights from an AI service
-  // For now, we'll cycle through sample insights
+  const entryId = location?.state?.entryId;
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentInsight(prev => {
-        const currentIndex = SAMPLE_INSIGHTS.findIndex(insight => insight.id === prev.id);
-        const nextIndex = (currentIndex + 1) % SAMPLE_INSIGHTS.length;
-        return SAMPLE_INSIGHTS[nextIndex];
-      });
-    }, 5000); // Change insight every 5 seconds for smoother transitions
+    if (!user) return;
 
-    return () => clearInterval(interval);
-  }, []);
+    let unsubscribe = null;
+
+    const subscribeToEntry = (id) => {
+      const ref = doc(db, "journalEntries", id);
+      unsubscribe = onSnapshot(
+        ref,
+        (snap) => {
+          if (!snap.exists()) {
+            setLoading(false);
+            return;
+          }
+
+          const data = snap.data();
+          const nextInsight = normalizeInsight(data);
+          const nextTimeline = normalizeTimeline(
+            data?.tomorrowTimeline ??
+              data?.tomorrowActivities ??
+              data?.tomorrow ??
+              data?.timelineTomorrow ??
+              data?.aiTimeline ??
+              null
+          );
+
+          setInsight(nextInsight);
+          setTimeline(nextTimeline);
+          setLoading(false);
+        },
+        (err) => {
+          console.error("Failed to subscribe to entry:", err);
+          setLoading(false);
+        }
+      );
+    };
+
+    const subscribeToLatestEntry = async () => {
+      try {
+        const entriesRef = collection(db, "journalEntries");
+        const q = query(entriesRef, where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(1));
+        const qs = await getDocs(q);
+        if (qs.empty) {
+          setLoading(false);
+          return;
+        }
+        subscribeToEntry(qs.docs[0].id);
+      } catch (err) {
+        console.error("Failed to load latest entry:", err);
+        setLoading(false);
+      }
+    };
+
+    if (entryId) subscribeToEntry(entryId);
+    else subscribeToLatestEntry();
+
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [user, entryId]);
 
   const styles = `
   body {
@@ -126,7 +193,16 @@ export default function AIInsightPage() {
         <DashboardHeader />
         
         <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-32 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start grow relative z-10">
-          <InsightContent insightType={currentInsight.type} />
+          <InsightContent
+            insightType={insight.type}
+            title={insight.title}
+            content={
+              loading
+                ? "We’re generating your insight from today’s entry…"
+                : insight.content
+            }
+            timeline={timeline}
+          />
         </main>
 
         <BottomNav activePage="insights" onNavigate={navigate} />

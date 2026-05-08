@@ -2,7 +2,7 @@
 import InsightImage from "./InsightImage";
 import InsightPanel from "./InsightPanel";
 
-export default function InsightContent({ insightType }) {
+export default function InsightContent({ insightType, title, content, timeline }) {
   return (
     <>
       {/* Left Side: Image + Symbols */}
@@ -12,7 +12,7 @@ export default function InsightContent({ insightType }) {
       
       {/* Right Side: Text in Glass Panel */}
       <div className="col-span-1 md:col-span-7 order-1 md:order-2 self-stretch">
-        <InsightPanel />
+        <InsightPanel title={title} content={content} timeline={timeline} />
       </div>
     </>
   );

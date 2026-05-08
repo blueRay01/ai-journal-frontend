@@ -4,8 +4,11 @@ import BottomNav from "../components/layout/BottomNav";
 import { useState, useEffect } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import { useAuth } from "../contexts/AuthContext";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
+
+// ── Key used by AIInsightPage to read the latest entry ───────────────────────
+const CHECKIN_STORAGE_KEY = "ai_journal_latest_checkin";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
@@ -203,87 +206,151 @@ export default function CheckInPage() {
   const [winsText, setWinsText] = useState("");
   const { user } = useAuth(); 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date()); // Fallback to local date
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch current date from internet API
   useEffect(() => {
-    const fetchInternetDate = async () => {
+    const fetchInternetDateAndCheckStatus = async () => {
       try {
-        // Try to get current date from WorldTimeAPI
         const response = await fetch('https://worldtimeapi.org/api/ip');
         if (response.ok) {
           const data = await response.json();
-          const internetDate = new Date(data.datetime);
-          setCurrentDate(internetDate);
+          setCurrentDate(new Date(data.datetime));
         }
       } catch (error) {
         console.log('Failed to fetch internet date, using local date:', error);
-        // Keep using local date as fallback
+      }
+
+      if (user) {
+        await checkTodayEntry();
+      } else {
+        setLoading(false);
       }
     };
 
-    fetchInternetDate();
-  }, []);
+    fetchInternetDateAndCheckStatus();
+  }, [user]);
+
+  const checkTodayEntry = async () => {
+    if (!user) return;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const entriesRef = collection(db, "journalEntries");
+      const q = query(
+        entriesRef,
+        where("userId", "==", user.uid),
+        where("createdAt", ">=", today),
+        where("createdAt", "<", tomorrow)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      setHasCheckedInToday(!querySnapshot.empty);
+    } catch (error) {
+      console.error("Error checking today's entry:", error);
+      setHasCheckedInToday(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const selectSingle = (setter, key) => setter(prev =>
     Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
   );
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!user) {
-      console.error('No user logged in');
-      return;
-    }
+  e.preventDefault();
+  if (!user || hasCheckedInToday) return;
 
-    try {
-      setIsSubmitting(true);
+  try {
+    setIsSubmitting(true);
 
-      // Get selected values from state objects
-      const selectedSleepQuality = Object.keys(sleepQuality).find(key => sleepQuality[key]);
-      const selectedMood = Object.keys(mood).find(key => mood[key]);
-      const selectedStressLevel = Object.keys(stressLevel).find(key => stressLevel[key]);
+    const selectedSleepQuality = Object.keys(sleepQuality).find(key => sleepQuality[key]);
+    const selectedMood = Object.keys(mood).find(key => mood[key]);
+    const selectedStressLevel = Object.keys(stressLevel).find(key => stressLevel[key]);
 
-      // Create journal entry object
-      const journalEntry = {
-        userId: user.uid,
+    const journalEntry = {
+      userId: user.uid,
+      exercise: exerciseChecked,
+      sleepQuality: selectedSleepQuality || "neutral",
+      mood: selectedMood || "neutral",
+      stressLevel: selectedStressLevel || "neutral",
+      reflection: winsText.trim(),
+      date: currentDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+      createdAt: serverTimestamp(),
+    };
+
+    // 1. Save entry to Firestore first
+    const docRef = await addDoc(collection(db, "journalEntries"), journalEntry);
+    console.log("Journal entry saved:", docRef.id);
+
+    // 2. Navigate immediately — AIInsightPage will show "generating..." while we finish
+    setHasCheckedInToday(true);
+    window.dispatchEvent(new CustomEvent("refreshStreak"));
+    navigate("/insights", { state: { entryId: docRef.id } });
+
+    // 3. Call Express server to generate AI insight
+    const aiRes = await fetch("http://localhost:5000/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         exercise: exerciseChecked,
-        sleepQuality: selectedSleepQuality || 'neutral',
-        mood: selectedMood || 'neutral',
-        stressLevel: selectedStressLevel || 'neutral',
+        sleepQuality: selectedSleepQuality || "neutral",
+        mood: selectedMood || "neutral",
+        stressLevel: selectedStressLevel || "neutral",
         reflection: winsText.trim(),
-        date: currentDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        }),
-        createdAt: serverTimestamp()
-      };
+      }),
+    });
 
-      // Save to Firestore
-      const docRef = await addDoc(collection(db, "journalEntries"), journalEntry);
-      console.log("Journal entry saved with ID:", docRef.id);
+    if (!aiRes.ok) throw new Error("AI generation failed");
+    const aiData = await aiRes.json();
 
-      // Navigate to insights after successful save
-      navigate('/insights');
-    } catch (error) {
-      console.error("Error saving journal entry:", error);
-      // You could show an error message to the user here
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    // 4. Update Firestore doc with AI results — onSnapshot in AIInsightPage picks this up
+    await updateDoc(doc(db, "journalEntries", docRef.id), {
+      aiInsight: aiData.insight,
+      insightType: aiData.insight.type,
+      tomorrowTimeline: aiData.timeline,
+    });
+
+    console.log("AI insight saved to Firestore");
+
+  } catch (error) {
+    console.error("Error:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const sectionCard = "p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-white/40";
   const checkboxBase = "w-5 h-5 border-2 border-[#27442f] rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm";
+
+  if (loading) {
+    return (
+      <>
+        <style>{styles}</style>
+        <div
+          className="text-on-surface font-body-md relative overflow-x-clip pb-40 min-h-screen flex items-center justify-center"
+          style={{ background: 'linear-gradient(to bottom, #f5f5f0, #e8e8e0)' }}
+        >
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-[#c8c8c0] border-t-[#5a7a5a] rounded-full animate-spin"></div>
+            <p className="mt-4 text-[#888880]">Loading check-in status...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <style>{styles}</style>
       <div
         className="text-on-surface font-body-md relative overflow-x-clip pb-40 min-h-screen"
-        style={{ background: "linear-gradient(160deg, #eef4e8 0%, #fffde8 50%, #f5f5ef 100%)" }}
+        style={{ background: 'linear-gradient(to bottom, #f5f5f0, #e8e8e0)' }}
       >
         <div className="aura-tl" />
         <div className="aura-br" />
@@ -292,31 +359,32 @@ export default function CheckInPage() {
 
         <main className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-[60px]">
 
-          {/* Header */}
           <div className="mb-16 mt-12 md:mt-20 text-center drop-shadow-md">
             <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">
               Daily Check-in
             </h1>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
-              Take a moment to reflect on your day.
+              {hasCheckedInToday 
+                ? "You've already checked in today. Come back tomorrow!"
+                : "Take a moment to reflect on your day."
+              }
             </p>
+            {hasCheckedInToday && (
+              <div className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 border border-green-300">
+                <span className="material-symbols-outlined text-[20px] mr-2">check_circle</span>
+                <span className="font-medium">Today's check-in complete</span>
+              </div>
+            )}
             <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-white/40 backdrop-blur-sm text-on-surface-variant font-label-sm text-label-sm border border-white/60 shadow-sm">
               <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
-              {currentDate.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              {currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
           </div>
 
-          {/* Book frame */}
           <div className="relative w-full max-w-6xl mx-auto z-10">
             <div className="book-page-under-3" />
             <div className="book-page-under-2" />
             <div className="book-page-under-1" />
-
-            {/* Binding line */}
             <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-black/5 via-black/15 to-black/5 hidden md:block z-20" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
@@ -345,7 +413,7 @@ export default function CheckInPage() {
                     </div>
                     <div className="relative">
                       <input type="checkbox" id="exercise-checkbox" className="exercise-checkbox sr-only"
-                        checked={exerciseChecked} onChange={(e) => setExerciseChecked(e.target.checked)} />
+                        checked={exerciseChecked} onChange={(e) => setExerciseChecked(e.target.checked)} disabled={hasCheckedInToday} />
                       <label htmlFor="exercise-checkbox"
                         className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer bg-white/50 backdrop-blur-sm">
                         {exerciseChecked && <CheckmarkSVG size={20} />}
@@ -370,7 +438,7 @@ export default function CheckInPage() {
                         <div key={key} className="flex flex-col items-center gap-2">
                           <input type="checkbox" id={`sleep-${key}`} className="sleep-checkbox sr-only"
                             checked={sleepQuality[key]}
-                            onChange={() => selectSingle(setSleepQuality, key)} />
+                            onChange={() => selectSingle(setSleepQuality, key)} disabled={hasCheckedInToday} />
                           <label htmlFor={`sleep-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
                             <div className={checkboxBase}>
                               {sleepQuality[key] && <CheckmarkSVG size={14} />}
@@ -399,7 +467,7 @@ export default function CheckInPage() {
                         <div key={key} className="flex flex-col items-center gap-2">
                           <input type="checkbox" id={`mood-${key}`} className="mood-checkbox sr-only"
                             checked={mood[key]}
-                            onChange={() => selectSingle(setMood, key)} />
+                            onChange={() => selectSingle(setMood, key)} disabled={hasCheckedInToday} />
                           <label htmlFor={`mood-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
                             <div className={checkboxBase}>
                               {mood[key] && <CheckmarkSVG size={14} />}
@@ -428,7 +496,7 @@ export default function CheckInPage() {
                         <div key={key} className="flex flex-col items-center gap-2">
                           <input type="checkbox" id={`stress-${key}`} className="stress-checkbox sr-only"
                             checked={stressLevel[key]}
-                            onChange={() => selectSingle(setStressLevel, key)} />
+                            onChange={() => selectSingle(setStressLevel, key)} disabled={hasCheckedInToday} />
                           <label htmlFor={`stress-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
                             <div className={checkboxBase}>
                               {stressLevel[key] && <CheckmarkSVG size={14} />}
@@ -472,6 +540,7 @@ export default function CheckInPage() {
                       placeholder="Write a short reflection about your day..."
                       value={winsText}
                       onChange={(e) => setWinsText(e.target.value)}
+                      disabled={hasCheckedInToday}
                     />
                   </div>
                 </div>
@@ -479,15 +548,17 @@ export default function CheckInPage() {
                 <div className="mt-10 flex justify-end">
                   <button
                     onClick={handleSubmit}
-                    disabled={!winsText.trim() || !Object.values(sleepQuality).some(v => v) || !Object.values(mood).some(v => v) || !Object.values(stressLevel).some(v => v)}
+                    disabled={isSubmitting || hasCheckedInToday || !winsText.trim() || !Object.values(sleepQuality).some(v => v) || !Object.values(mood).some(v => v) || !Object.values(stressLevel).some(v => v)}
                     className={`font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
-                      winsText.trim() && Object.values(sleepQuality).some(v => v) && Object.values(mood).some(v => v) && Object.values(stressLevel).some(v => v)
+                      !isSubmitting && winsText.trim() && Object.values(sleepQuality).some(v => v) && Object.values(mood).some(v => v) && Object.values(stressLevel).some(v => v)
                         ? "bg-primary text-on-primary hover:bg-primary-fixed-variant shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    Submit Entry
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    {isSubmitting ? "Saving…" : "Submit Entry"}
+                    <span className="material-symbols-outlined text-[18px]">
+                      {isSubmitting ? "hourglass_empty" : "arrow_forward"}
+                    </span>
                   </button>
                 </div>
               </div>

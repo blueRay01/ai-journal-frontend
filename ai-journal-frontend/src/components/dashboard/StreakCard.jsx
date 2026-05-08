@@ -7,42 +7,70 @@ import { db } from "../../config/firebase";
 export default function StreakCard() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [lastUpdateDate, setLastUpdateDate] = useState(null);
   const { user } = useAuth();
 
+  const fetchStreak = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Get all journal entries for the current user, ordered by date
+      const entriesRef = collection(db, "journalEntries");
+      const q = query(
+        entriesRef,
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const entries = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Calculate consecutive day streak
+      const streak = calculateConsecutiveStreak(entries);
+      setCurrentStreak(streak);
+      setLastUpdateDate(new Date().toDateString());
+    } catch (error) {
+      console.error("Error fetching streak:", error);
+      setCurrentStreak(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch and periodic refresh
   useEffect(() => {
     if (!user) return;
+    
+    fetchStreak();
+    
+    // Set up periodic refresh (every 5 minutes)
+    const interval = setInterval(() => {
+      const today = new Date().toDateString();
+      if (lastUpdateDate !== today) {
+        fetchStreak();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
 
-    const fetchStreak = async () => {
-      try {
-        setLoading(true);
-        
-        // Get all journal entries for the current user, ordered by date
-        const entriesRef = collection(db, "journalEntries");
-        const q = query(
-          entriesRef,
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
-        );
-        
-        const querySnapshot = await getDocs(q);
-        const entries = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+    return () => clearInterval(interval);
+  }, [user, lastUpdateDate]);
 
-        // Calculate consecutive day streak
-        const streak = calculateConsecutiveStreak(entries);
-        setCurrentStreak(streak);
-      } catch (error) {
-        console.error("Error fetching streak:", error);
-        setCurrentStreak(0);
-      } finally {
-        setLoading(false);
+  // Listen for custom refresh event
+  useEffect(() => {
+    const handleRefresh = () => {
+      const today = new Date().toDateString();
+      if (lastUpdateDate !== today) {
+        fetchStreak();
       }
     };
 
-    fetchStreak();
-  }, [user]);
+    window.addEventListener('refreshStreak', handleRefresh);
+    return () => window.removeEventListener('refreshStreak', handleRefresh);
+  }, [lastUpdateDate]);
 
   // Calculate consecutive day streak from journal entries
   const calculateConsecutiveStreak = (entries) => {
