@@ -215,6 +215,9 @@ export default function CheckInPage() {
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [loading, setLoading] = useState(true);
   const [todayEntry, setTodayEntry] = useState(null);
+  const [todayActivities, setTodayActivities] = useState([]);
+  const [completedActivities, setCompletedActivities] = useState([]);
+  const [activitiesExhausted, setActivitiesExhausted] = useState(true);
 
   useEffect(() => {
     const fetchInternetDateAndCheckStatus = async () => {
@@ -269,6 +272,9 @@ export default function CheckInPage() {
         setMood(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.mood])));
         setStressLevel(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.stressLevel])));
         setWinsText(entryData.reflection || "");
+      } else {
+        // No entry today, check for yesterday's activities
+        await loadYesterdayActivities();
       }
     } catch (error) {
       console.error("Error checking today's entry:", error);
@@ -278,6 +284,54 @@ export default function CheckInPage() {
     }
   };
 
+  const loadYesterdayActivities = async () => {
+    if (!user) return;
+    
+    try {
+      // Get yesterday's entry to find today's activities
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      
+      const endOfYesterday = new Date(yesterday);
+      endOfYesterday.setHours(23, 59, 59, 999);
+      
+      const entriesRef = collection(db, "journalEntries");
+      const q = query(
+        entriesRef,
+        where("userId", "==", user.uid),
+        where("createdAt", ">=", yesterday),
+        where("createdAt", "<=", endOfYesterday),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const yesterdayEntry = querySnapshot.docs[0].data();
+        const activities = yesterdayEntry.tomorrowTimeline || [];
+        setTodayActivities(activities);
+        setCompletedActivities([]); // Start fresh today
+        setActivitiesExhausted(activities.length === 0); // If no activities, allow check-in
+      } else {
+        setActivitiesExhausted(true); // No previous entry, allow check-in
+      }
+    } catch (error) {
+      console.error("Error loading yesterday's activities:", error);
+      setActivitiesExhausted(true); // On error, allow check-in
+    }
+  };
+
+  const toggleActivityCompletion = (activityIndex) => {
+    setCompletedActivities(prev => {
+      if (prev.includes(activityIndex)) {
+        return prev.filter(index => index !== activityIndex);
+      } else {
+        return [...prev, activityIndex];
+      }
+    });
+  };
+
   const selectSingle = (setter, key) => setter(prev =>
     Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
   );
@@ -285,6 +339,11 @@ export default function CheckInPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user || hasCheckedInToday) return;
+    
+    // Check if activities are exhausted
+    if (!activitiesExhausted && completedActivities.length < todayActivities.length) {
+      return; // Prevent check-in if activities not completed
+    }
 
     try {
       setIsSubmitting(true);
@@ -416,7 +475,9 @@ export default function CheckInPage() {
             <p className="font-body-lg text-body-lg text-on-surface-variant">
               {hasCheckedInToday
                 ? "You've already checked in today. Come back tomorrow!"
-                : "Take a moment to reflect on your day."
+                : !activitiesExhausted && todayActivities.length > 0
+                  ? `Complete your ${todayActivities.length - completedActivities.length} remaining activities first.`
+                  : "Take a moment to reflect on your day."
               }
             </p>
             {hasCheckedInToday && (
@@ -430,6 +491,62 @@ export default function CheckInPage() {
               {currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
           </div>
+
+          {/* Today's Activities Section */}
+          {!hasCheckedInToday && !activitiesExhausted && todayActivities.length > 0 && (
+            <div className="mb-8 max-w-4xl mx-auto">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 shadow-sm">
+                <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                  <span className="material-symbols-outlined">task_alt</span>
+                  Today's Activities
+                </h3>
+                <div className="space-y-3">
+                  {todayActivities.map((activity, index) => {
+                    const isCompleted = completedActivities.includes(index);
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                          isCompleted
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => toggleActivityCompletion(index)}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          isCompleted
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {isCompleted && (
+                            <CheckmarkSVG size={12} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${
+                            isCompleted ? 'text-green-800 line-through' : 'text-on-surface'
+                          }`}>
+                            {activity.title || 'Activity'}
+                          </p>
+                          {activity.subtitle && (
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              {activity.subtitle}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-primary">
+                          {activity.time || ''}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 text-sm text-on-surface-variant">
+                  {completedActivities.length} of {todayActivities.length} completed
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="relative w-full max-w-6xl mx-auto z-10">
             <div className="book-page-under-3" />
@@ -537,11 +654,11 @@ export default function CheckInPage() {
                     </div>
                     <div className="grid grid-cols-5 gap-3">
                       {[
-                        { key: 'calm',        label: 'Calm'        },
-                        { key: 'tense',       label: 'Tense'       },
-                        { key: 'neutral',     label: 'Neutral'     },
-                        { key: 'moderate',    label: 'Moderate'    },
                         { key: 'overwhelmed', label: 'Overwhelmed' },
+                        { key: 'moderate',    label: 'Moderate'    },
+                        { key: 'neutral',     label: 'Neutral'     },
+                        { key: 'tense',       label: 'Tense'       },
+                        { key: 'calm',        label: 'Calm'        },
                       ].map(({ key, label }) => (
                         <div key={key} className="flex flex-col items-center gap-2">
                           <input type="checkbox" id={`stress-${key}`} className="stress-checkbox sr-only"
@@ -602,20 +719,30 @@ export default function CheckInPage() {
                       isSubmitting || hasCheckedInToday || !winsText.trim() ||
                       !Object.values(sleepQuality).some(v => v) ||
                       !Object.values(mood).some(v => v) ||
-                      !Object.values(stressLevel).some(v => v)
+                      !Object.values(stressLevel).some(v => v) ||
+                      (!activitiesExhausted && completedActivities.length < todayActivities.length)
                     }
                     className={`font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
                       !isSubmitting && winsText.trim() &&
                       Object.values(sleepQuality).some(v => v) &&
                       Object.values(mood).some(v => v) &&
-                      Object.values(stressLevel).some(v => v)
+                      Object.values(stressLevel).some(v => v) &&
+                      (activitiesExhausted || completedActivities.length === todayActivities.length)
                         ? "bg-primary text-on-primary hover:bg-primary-fixed-variant shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    {isSubmitting ? "Saving…" : "Submit Entry"}
+                    {isSubmitting ? "Saving…" : 
+                      !activitiesExhausted && completedActivities.length < todayActivities.length
+                        ? "Complete Activities First"
+                        : "Submit Entry"
+                    }
                     <span className="material-symbols-outlined text-[18px]">
-                      {isSubmitting ? "hourglass_empty" : "arrow_forward"}
+                      {isSubmitting ? "hourglass_empty" : 
+                        !activitiesExhausted && completedActivities.length < todayActivities.length
+                          ? "block"
+                          : "arrow_forward"
+                      }
                     </span>
                   </button>
                 </div>

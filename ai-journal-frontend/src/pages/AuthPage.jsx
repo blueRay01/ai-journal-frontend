@@ -206,12 +206,6 @@ export default function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)} 
                 disabled={loading}
               />
-              <PasswordField 
-                showForgot={tab === "login"} 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                disabled={loading}
-              />
 
               {/* Nickname — only on signup */}
               {tab === "signup" && (
@@ -239,6 +233,13 @@ export default function AuthPage() {
                   </div>
                 </div>
               )}
+
+              <PasswordField 
+                showForgot={tab === "login"} 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                disabled={loading}
+              />
 
               {/* Confirm password — only on signup */}
               {tab === "signup" && (

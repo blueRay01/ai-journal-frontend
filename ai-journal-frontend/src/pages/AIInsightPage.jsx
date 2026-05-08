@@ -68,6 +68,31 @@ function normalizeInsight(entryData) {
   };
 }
 
+function checkStreakBroken(entries) {
+  if (entries.length < 2) return false;
+  
+  // Check for gaps in consecutive days
+  for (let i = 1; i < entries.length; i++) {
+    const currentDate = new Date(entries[i].createdAt);
+    const previousDate = new Date(entries[i-1].createdAt);
+    
+    // Reset both dates to start of day for accurate comparison
+    currentDate.setHours(0, 0, 0, 0);
+    previousDate.setHours(0, 0, 0, 0);
+    
+    // Calculate the difference in days
+    const diffTime = currentDate - previousDate;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // If there's a gap of more than 1 day, streak is broken
+    if (diffDays > 1) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 export default function AIInsightPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,6 +100,9 @@ export default function AIInsightPage() {
   const [insight, setInsight] = useState({ type: "morning_routine", title: "", content: "" });
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isFirstDay, setIsFirstDay] = useState(true);
+  const [showTomorrowPlanToday, setShowTomorrowPlanToday] = useState(false);
+  const [entryDate, setEntryDate] = useState(null);
 
   const entryId = location?.state?.entryId;
 
@@ -106,6 +134,13 @@ export default function AIInsightPage() {
 
           setInsight(nextInsight);
           setTimeline(nextTimeline);
+          
+          // Check if this is the first day or if we should show tomorrow's plan today
+          const entryCreatedAt = data.createdAt?.toDate();
+          if (entryCreatedAt) {
+            setEntryDate(entryCreatedAt);
+          }
+          
           setLoading(false);
         },
         (err) => {
@@ -118,6 +153,27 @@ export default function AIInsightPage() {
     const subscribeToLatestEntry = async () => {
       try {
         const entriesRef = collection(db, "journalEntries");
+        
+        // Get all entries to check if it's the first day and detect streak
+        const allEntriesQuery = query(entriesRef, where("userId", "==", user.uid), orderBy("createdAt", "asc"));
+        const allEntriesSnapshot = await getDocs(allEntriesQuery);
+        const allEntries = allEntriesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate()
+        }));
+        
+        setIsFirstDay(allEntries.length <= 1);
+        
+        // Check if streak is broken (missing days between entries)
+        if (allEntries.length > 1) {
+          const streakBroken = checkStreakBroken(allEntries);
+          setShowTomorrowPlanToday(streakBroken);
+        } else {
+          setShowTomorrowPlanToday(true); // First day, show tomorrow's plan today
+        }
+        
+        // Then get the latest entry
         const q = query(entriesRef, where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(1));
         const qs = await getDocs(q);
         if (qs.empty) {
@@ -198,10 +254,12 @@ export default function AIInsightPage() {
             title={insight.title}
             content={
               loading
-                ? "We’re generating your insight from today’s entry…"
+                ? "We're generating your insight from today's entry…"
                 : insight.content
             }
             timeline={timeline}
+            showTomorrowPlanToday={showTomorrowPlanToday}
+            entryDate={entryDate}
           />
         </main>
 

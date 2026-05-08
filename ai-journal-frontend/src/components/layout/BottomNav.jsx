@@ -14,8 +14,6 @@ const NAV_ITEMS = [
 
   { icon: "analytics",  label: "Report",   id: "report",  route: "/report"  },
 
-  { icon: "settings",   label: "Settings", id: "settings", route: "/settings" },
-
 ];
 
 

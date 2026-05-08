@@ -20,6 +20,9 @@ export default function DashboardPage() {
   const [activeFocus, setActiveFocus] = useState(null);
   const [userNickname, setUserNickname] = useState("");
   const [greeting, setGreeting] = useState("Good Morning");
+  const [showTomorrowPlanToday, setShowTomorrowPlanToday] = useState(false);
+  const [isFirstDay, setIsFirstDay] = useState(true);
+  const [streakBroken, setStreakBroken] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -58,7 +61,54 @@ export default function DashboardPage() {
     
     fetchUserData();
     fetchLatestTimeline();
+    checkTomorrowPlanDisplay();
   }, [user]);
+  
+  const checkTomorrowPlanDisplay = async () => {
+    if (!user) return;
+    
+    try {
+      const entriesRef = collection(db, "journalEntries");
+      const allEntriesQuery = query(entriesRef, where("userId", "==", user.uid), orderBy("createdAt", "asc"));
+      const allEntriesSnapshot = await getDocs(allEntriesQuery);
+      const allEntries = allEntriesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+      
+      // Check if it's the first day or if streak is broken
+      if (allEntries.length <= 1) {
+        setShowTomorrowPlanToday(true); // First day, show tomorrow's plan today
+        setIsFirstDay(true);
+        setStreakBroken(false);
+      } else {
+        setIsFirstDay(false);
+        // Check for broken streak
+        let broken = false;
+        for (let i = 1; i < allEntries.length; i++) {
+          const currentDate = new Date(allEntries[i].createdAt);
+          const previousDate = new Date(allEntries[i-1].createdAt);
+          
+          currentDate.setHours(0, 0, 0, 0);
+          previousDate.setHours(0, 0, 0, 0);
+          
+          const diffTime = currentDate - previousDate;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 1) {
+            broken = true;
+            break;
+          }
+        }
+        
+        setStreakBroken(broken);
+        setShowTomorrowPlanToday(broken);
+      }
+    } catch (error) {
+      console.error("Error checking tomorrow plan display:", error);
+    }
+  };
   
   useEffect(() => {
     const updateGreeting = () => {
@@ -118,7 +168,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="md:col-span-5">
-            <TimelineProgressionCard timeline={timeline} entryDate={entryDate} onProgressChange={setResonancePct} onActiveFocusChange={setActiveFocus}/>
+            <TimelineProgressionCard timeline={timeline} entryDate={entryDate} onProgressChange={setResonancePct} onActiveFocusChange={setActiveFocus} showTomorrowPlanToday={showTomorrowPlanToday} isFirstDay={isFirstDay} streakBroken={streakBroken}/>
           </div>
         </div>
       </main>

@@ -68,8 +68,10 @@ export default function HistoryPage() {
         const entries = snap.docs.map((docSnap) => {
           const data = docSnap.data();
           const date = data.createdAt?.toDate?.() ?? null;
+
+          // Trust stored summaryScore first; fallback for older entries
           const score = data.summaryScore != null
-            ? data.summaryScore
+            ? Number(data.summaryScore)
             : data.mood
               ? calculateWellnessScore(
                   data.mood         || "neutral",
@@ -78,6 +80,7 @@ export default function HistoryPage() {
                   data.exercise     || false
                 )
               : null;
+
           return {
             id:           docSnap.id,
             emoji:        data.summaryEmoji   || "📝",
@@ -85,7 +88,6 @@ export default function HistoryPage() {
             rawDate:      date,
             score,
             preview:      data.summaryPreview || data.reflection || "No summary available.",
-            // ── new fields for the expanded insight panel ──
             mood:         data.mood         || null,
             sleepQuality: data.sleepQuality || null,
             stressLevel:  data.stressLevel  || null,

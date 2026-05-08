@@ -9,6 +9,16 @@ app.use(express.json());
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Shared helper: strips markdown fences and returns parsed JSON
+function parseClaudeJSON(raw) {
+  const cleaned = raw
+    .trim()
+    .replace(/^```[\w]*[\r\n]*/i, "")
+    .replace(/[\r\n]*```\s*$/i, "")
+    .trim();
+  return JSON.parse(cleaned);
+}
+
 app.post("/api/analyze", async (req, res) => {
   const { exercise, sleepQuality, mood, stressLevel, reflection } = req.body;
 
@@ -42,20 +52,108 @@ Respond ONLY with a valid JSON object in this exact format, no preamble, no mark
     "preview": "A single sentence (max 15 words) summarizing the key insight for this entry, written in second person."
   }
 }
+CRITICAL: Return raw JSON only. No backticks, no markdown, no code fences, no explanation.
 `;
 
   try {
     const message = await client.messages.create({
-      model: "claude-opus-4-6",
+      model: "claude-opus-4-5",
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw = message.content[0].text.trim();
-    const parsed = JSON.parse(raw);
+    const parsed = parseClaudeJSON(message.content[0].text);
     res.json(parsed);
   } catch (err) {
-    console.error("Full error:", err.message);
+    console.error("Analyze error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/analyze-correlations", async (req, res) => {
+  const { entries } = req.body;
+
+  const prompt = `
+You are a data analysis AI specializing in wellness correlations. Analyze the following journal entry data and identify the strongest correlation between different wellness factors.
+
+User's journal data:
+${entries.map(entry => `
+Date: ${entry.date}
+Sleep Quality: ${entry.sleepQuality}
+Exercise: ${entry.exercise ? "Yes" : "No"}
+Mood: ${entry.mood}
+Stress Level: ${entry.stressLevel}
+Wellness Score: ${entry.wellnessScore}/10
+`).join("\n")}
+
+Identify the most significant correlation and return a JSON object with:
+{
+  "title": "Brief title of the correlation (max 5 words)",
+  "body": "Detailed explanation of the correlation with specific percentages or patterns discovered"
+}
+
+Focus on correlations between:
+- Sleep quality and wellness scores
+- Exercise and mood/stress levels
+- Stress levels and sleep quality
+- Mood patterns and overall wellness
+
+Return raw JSON only. No backticks, no markdown, no code fences, no explanation.
+`;
+
+  try {
+    const msg = await client.messages.create({
+      model: "claude-opus-4-5",
+      max_tokens: 500,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const parsed = parseClaudeJSON(msg.content[0].text);
+    res.json({ correlation: parsed });
+  } catch (err) {
+    console.error("Correlation analysis error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/generate-weekly-intent", async (req, res) => {
+  const { entries } = req.body;
+
+  if (!entries || entries.length === 0) {
+    return res.status(400).json({ error: "No entries provided." });
+  }
+
+  const summary = entries.map((e, i) =>
+    `Day ${i + 1}: mood=${e.mood}, sleep=${e.sleepQuality}, stress=${e.stressLevel}, exercise=${e.exercise ? "yes" : "no"}, reflection="${e.reflection}"`
+  ).join("\n");
+
+  const prompt = `
+You are a compassionate wellness AI. Based on this user's weekly journal entries, generate a focus intent for next week.
+
+Weekly entries:
+${summary}
+
+Return ONLY a raw JSON object with no markdown or code fences:
+{
+  "intent": {
+    "title": "A short motivating title (max 5 words)",
+    "body": "A 2-3 sentence personalized recommendation for next week based on patterns you notice. Be warm and specific."
+  }
+}
+CRITICAL: Return raw JSON only. No backticks, no markdown, no code fences, no explanation.
+`;
+
+  try {
+    const message = await client.messages.create({
+      model: "claude-opus-4-5",
+      max_tokens: 512,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const parsed = parseClaudeJSON(message.content[0].text);
+    res.json(parsed);
+  } catch (err) {
+    console.error("Weekly intent error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

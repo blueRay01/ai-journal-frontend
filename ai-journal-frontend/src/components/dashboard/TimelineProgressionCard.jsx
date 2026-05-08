@@ -46,7 +46,7 @@ function UncheckDialog({ title, isPastDeadline, onConfirm, onCancel }) {
   );
 }
 
-export default function TimelineProgressionCard({ timeline = [], entryDate = null, onProgressChange, onActiveFocusChange }) {
+export default function TimelineProgressionCard({ timeline = [], entryDate = null, onProgressChange, onActiveFocusChange, showTomorrowPlanToday = false, isFirstDay = false, streakBroken = false }) {
   const [checked, setChecked] = useState({});
   const [wasLate, setWasLate] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -61,11 +61,25 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     return entry < today;
   })();
 
+  const isTimelineFrozen = showTomorrowPlanToday;
+
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowLabel = tomorrow.toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric",
   });
+
+  const getPlanInfo = () => {
+    if (showTomorrowPlanToday) {
+      return { title: "Tomorrow's Plan", status: "Inactive" };
+    }
+    if (isUnlocked) {
+      return { title: "Today's Plan", status: "Available now" };
+    }
+    return { title: "Tomorrow's Plan", status: tomorrowLabel };
+  };
+
+  const planInfo = getPlanInfo();
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(nowMinutes()), 60_000);
@@ -80,7 +94,6 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     setWasLate(init);
   }, [timeline]);
 
-  // Report progress to parent whenever checked state changes
   useEffect(() => {
     if (!onProgressChange || timeline.length === 0) return;
     const completedCount = Object.values(checked).filter(Boolean).length;
@@ -88,9 +101,8 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     onProgressChange(pct);
   }, [checked, timeline, onProgressChange]);
 
-  // Report active task to parent whenever time or timeline changes
   useEffect(() => {
-    if (!onActiveFocusChange || timeline.length === 0 || !isUnlocked) return;
+    if (!onActiveFocusChange || timeline.length === 0 || isTimelineFrozen) return;
     const activeIndex = timeline.findIndex((entry, i) => {
       const start = toMinutes(entry.time);
       const end = i < timeline.length - 1 ? toMinutes(timeline[i + 1].time) : Infinity;
@@ -104,7 +116,7 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     } else {
       onActiveFocusChange(null);
     }
-  }, [currentTime, timeline, isUnlocked, onActiveFocusChange]);
+  }, [currentTime, timeline, onActiveFocusChange, isTimelineFrozen]);
 
   const getEffectiveStatus = (index) => {
     const entry = timeline[index];
@@ -115,6 +127,11 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     const isCheckedNow = checked[index];
     const isLate = wasLate[index];
 
+    if (isTimelineFrozen) {
+      if (isCheckedNow) return "done";
+      return "upcoming";
+    }
+
     if (isCheckedNow) return isLate ? "late-done" : "done";
     if (isActive) return "active";
     if (isPastDeadline || isLate) return "late";
@@ -123,7 +140,8 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
   };
 
   const handleCircleClick = (index) => {
-    if (!isUnlocked) return;
+    if (isTimelineFrozen) return;
+
     const entry = timeline[index];
     const deadline = getDeadlineMinutes(index, timeline);
     const isPastDeadline = deadline < currentTime;
@@ -162,24 +180,28 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
         />
       )}
 
-      <div className="bg-[#f2f2ee] rounded-2xl p-5 flex flex-col gap-1 h-full">
+      <div key={`${isFirstDay}-${streakBroken}-${showTomorrowPlanToday}`} className="bg-[#f2f2ee] rounded-2xl p-5 flex flex-col gap-1 h-full">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#3a3a35] text-base">show_chart</span>
             <div>
-              <span className="text-sm font-medium text-[#2a3a2a]">Tomorrow's Plan</span>
-              <p className="text-[10px] text-[#888880] mt-0.5">{tomorrowLabel}</p>
+              <span className="text-sm font-medium text-[#2a3a2a]">
+                {planInfo.title}
+              </span>
+              <p className="text-[10px] text-[#888880] mt-0.5">
+                {planInfo.status}
+              </p>
             </div>
           </div>
           <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${
-            isUnlocked
-              ? "bg-green-100 text-green-700"
-              : "bg-amber-50 text-amber-600 border border-amber-200"
+            isTimelineFrozen
+              ? "bg-gray-100 text-gray-400"
+              : "bg-green-100 text-green-700"
           }`}>
             <span className="material-symbols-outlined text-[13px]">
-              {isUnlocked ? "lock_open" : "lock"}
+              {isTimelineFrozen ? "lock" : "lock_open"}
             </span>
-            {isUnlocked ? "Active" : "Unlocks tomorrow"}
+            {isTimelineFrozen ? "Inactive" : "Active"}
           </div>
         </div>
 
@@ -192,52 +214,25 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
           </div>
         )}
 
-        {timeline.length > 0 && !isUnlocked && (
-          <div className="relative flex flex-col">
-            <div className="absolute inset-0 z-10 rounded-xl flex flex-col items-center justify-center gap-2"
-              style={{ background: "rgba(242,242,238,0.75)", backdropFilter: "blur(4px)" }}>
-              <span className="material-symbols-outlined text-[32px] text-[#8a9a8a]">lock</span>
-              <p className="text-[12px] text-[#8a9a8a] font-medium">Available tomorrow</p>
-              <p className="text-[10px] text-[#aaa] text-center px-4">
-                Your AI-curated plan will unlock at midnight
-              </p>
-            </div>
-            <div style={{ filter: "blur(2px)", pointerEvents: "none", userSelect: "none" }}>
-              {timeline.map((entry, i) => (
-                <div key={i} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-7 h-7 rounded-full border-2 border-[#ddddd5] bg-[#f2f2ee] flex items-center justify-center shrink-0" />
-                    {i < timeline.length - 1 && <div className="w-px flex-1 bg-[#ddddd5] my-1 min-h-[24px]" />}
-                  </div>
-                  <div className="flex-1 pb-5 pt-0.5">
-                    <span className="text-xs font-semibold text-[#5a5a55]">{entry.time}</span>
-                    <p className="text-sm font-medium text-[#2a3a2a] leading-snug">{entry.title}</p>
-                    {entry.subtitle && <p className="text-xs text-[#888880] mt-0.5">{entry.subtitle}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {timeline.length > 0 && isUnlocked && (
+        {timeline.length > 0 && (
           <div className="flex flex-col">
             {timeline.map((entry, i) => {
               const effectiveStatus = getEffectiveStatus(i);
               const isFuture = toMinutes(entry.time) > currentTime && effectiveStatus !== "active";
               const isLateDone = effectiveStatus === "late-done";
+              const isFrozen = isTimelineFrozen;
 
               return (
                 <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <button
                       type="button"
-                      disabled={isFuture}
+                      disabled={isFuture || isFrozen}
                       onClick={() => handleCircleClick(i)}
                       className={`
                         w-7 h-7 rounded-full flex items-center justify-center shrink-0
                         transition-all duration-200
-                        ${isFuture ? "cursor-not-allowed opacity-50" : "hover:scale-110 cursor-pointer"}
+                        ${(isFuture || isFrozen) ? "cursor-not-allowed opacity-50" : "hover:scale-110 cursor-pointer"}
                         ${effectiveStatus === "done" || isLateDone
                           ? isLateDone ? "bg-[#c05050] border-2 border-[#c05050]" : "bg-[#5a7a5a] border-2 border-[#5a7a5a]"
                           : effectiveStatus === "late"
@@ -262,13 +257,13 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
                   </div>
 
                   <div className={`flex-1 pb-5 transition-all duration-300 ${
-                    effectiveStatus === "active" ? "bg-[#2f4a35] rounded-xl p-3 mb-2 -mt-0.5"
+                    effectiveStatus === "active" && !isFrozen ? "bg-[#2f4a35] rounded-xl p-3 mb-2 -mt-0.5"
                     : effectiveStatus === "late" || isLateDone ? "bg-[#fef0f0] rounded-xl p-3 mb-2 -mt-0.5"
                     : "pt-0.5"
                   }`}>
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className={`text-xs font-semibold ${
-                        effectiveStatus === "active" ? "text-[#b8d4bc]"
+                        effectiveStatus === "active" && !isFrozen ? "text-[#b8d4bc]"
                         : effectiveStatus === "late" || isLateDone ? "text-[#c05050]"
                         : "text-[#5a5a55]"
                       }`}>{entry.time}</span>
@@ -277,13 +272,13 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
                           {isLateDone ? "Completed late" : "Marked as late"}
                         </span>
                       )}
-                      {effectiveStatus === "active" && (
+                      {effectiveStatus === "active" && !isFrozen && (
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       )}
                     </div>
 
                     <p className={`text-sm font-medium leading-snug ${
-                      effectiveStatus === "active" ? "text-white"
+                      effectiveStatus === "active" && !isFrozen ? "text-white"
                       : effectiveStatus === "late" ? "text-[#c05050] line-through"
                       : isLateDone ? "text-[#c05050]"
                       : "text-[#2a3a2a]"
@@ -291,13 +286,13 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
 
                     {entry.subtitle && (
                       <p className={`text-xs mt-0.5 ${
-                        effectiveStatus === "active" ? "text-[#9ab89e]"
+                        effectiveStatus === "active" && !isFrozen ? "text-[#9ab89e]"
                         : effectiveStatus === "late" || isLateDone ? "text-[#c07070]"
                         : "text-[#888880]"
                       }`}>{entry.subtitle}</p>
                     )}
 
-                    {effectiveStatus === "active" && (
+                    {effectiveStatus === "active" && !isFrozen && (
                       <button
                         onClick={() => handleCircleClick(i)}
                         className="mt-2 bg-[#1a2e1f] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-md flex items-center gap-1.5 hover:bg-[#0f1f13] transition-colors active:scale-95"

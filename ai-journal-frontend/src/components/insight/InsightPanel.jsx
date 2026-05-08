@@ -9,10 +9,25 @@ function formatTimeLabel(value) {
   return "";
 }
 
-export default function InsightPanel({ title, content, timeline }) {
+export default function InsightPanel({ title, content, timeline, showTomorrowPlanToday, entryDate }) {
   const safeTitle = title || "Your AI Insight";
-  const safeContent = content || "We’re generating your insight. This usually takes a moment…";
+  const safeContent = content || "We're generating your insight. This usually takes a moment…";
   const hasTimeline = Array.isArray(timeline) && timeline.length > 0;
+  
+  // Determine if we should show tomorrow's plan today
+  const shouldShowTomorrowPlanToday = showTomorrowPlanToday && hasTimeline;
+  
+  // Get status message for timeline
+  const getTimelineStatus = () => {
+    if (shouldShowTomorrowPlanToday) return "Available today";
+    return "Available tomorrow";
+  };
+  
+  // Get timeline title
+  const getTimelineTitle = () => {
+    if (shouldShowTomorrowPlanToday) return "Today's plan";
+    return "Tomorrow's timeline";
+  };
 
   return (
     <div className="glass-panel p-8 md:p-12 rounded-4xl flex flex-col gap-10" style={{ background: 'rgba(253, 250, 246, 0.6)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.9)', boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.1), 0 10px 20px -10px rgba(0, 0, 0, 0.05)' }}>
@@ -30,11 +45,16 @@ export default function InsightPanel({ title, content, timeline }) {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-primary tracking-wide">
-            Tomorrow’s timeline
+            {getTimelineTitle()}
           </h2>
           {!hasTimeline && (
             <span className="text-xs text-on-surface-variant">
-              Curating…
+              {getTimelineStatus()}
+            </span>
+          )}
+          {hasTimeline && (
+            <span className="text-xs text-on-surface-variant">
+              {getTimelineStatus()}
             </span>
           )}
         </div>
@@ -44,7 +64,7 @@ export default function InsightPanel({ title, content, timeline }) {
             {timeline.map((item, idx) => (
               <li
                 key={`${item?.time || ""}-${item?.title || ""}-${idx}`}
-                className="flex gap-3 rounded-2xl border border-primary/10 bg-white/50 px-4 py-3"
+                className="flex gap-3 rounded-2xl border border-primary/10 bg-white/50 hover:bg-white/70 cursor-pointer transition-colors px-4 py-3"
               >
                 <div className="shrink-0 w-[84px]">
                   <p className="text-xs font-semibold text-primary">
@@ -58,6 +78,11 @@ export default function InsightPanel({ title, content, timeline }) {
                   {item?.subtitle && (
                     <p className="text-xs text-on-surface-variant mt-0.5">
                       {item.subtitle}
+                    </p>
+                  )}
+                  {shouldShowTomorrowPlanToday && (
+                    <p className="text-xs text-primary mt-1 font-medium">
+                      Available today
                     </p>
                   )}
                 </div>
