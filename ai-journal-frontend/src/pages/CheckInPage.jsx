@@ -1,7 +1,7 @@
 // src/pages/CheckInPage.jsx
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/layout/BottomNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import { useAuth } from "../contexts/AuthContext";
 import { saveJournalEntry } from "../services/journalService";
@@ -202,6 +202,27 @@ export default function CheckInPage() {
   const [winsText, setWinsText] = useState("");
   const { user } = useAuth(); 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date()); // Fallback to local date
+
+  // Fetch current date from internet API
+  useEffect(() => {
+    const fetchInternetDate = async () => {
+      try {
+        // Try to get current date from WorldTimeAPI
+        const response = await fetch('https://worldtimeapi.org/api/ip');
+        if (response.ok) {
+          const data = await response.json();
+          const internetDate = new Date(data.datetime);
+          setCurrentDate(internetDate);
+        }
+      } catch (error) {
+        console.log('Failed to fetch internet date, using local date:', error);
+        // Keep using local date as fallback
+      }
+    };
+
+    fetchInternetDate();
+  }, []);
 
   const selectSingle = (setter, key) => setter(prev =>
     Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
@@ -239,7 +260,11 @@ export default function CheckInPage() {
             </p>
             <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-white/40 backdrop-blur-sm text-on-surface-variant font-label-sm text-label-sm border border-white/60 shadow-sm">
               <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
-              October 24, 2023
+              {currentDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
             </div>
           </div>
 
@@ -412,7 +437,12 @@ export default function CheckInPage() {
                 <div className="mt-10 flex justify-end">
                   <button
                     onClick={handleSubmit}
-                    className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-all shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
+                    disabled={!winsText.trim() || !Object.values(sleepQuality).some(v => v) || !Object.values(mood).some(v => v) || !Object.values(stressLevel).some(v => v)}
+                    className={`font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
+                      winsText.trim() && Object.values(sleepQuality).some(v => v) && Object.values(mood).some(v => v) && Object.values(stressLevel).some(v => v)
+                        ? "bg-primary text-on-primary hover:bg-primary-fixed-variant shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
                     Submit Entry
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
