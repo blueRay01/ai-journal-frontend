@@ -117,12 +117,15 @@ export default function AIInsightPage() {
   return (
     <>
       <style>{styles}</style>
-      <div className="text-on-background min-h-screen relative font-body-md overflow-x-clip antialiased flex flex-col items-center pb-40">
+      <div 
+        className="text-on-background min-h-screen relative font-body-md overflow-x-clip antialiased flex flex-col items-center pb-40"
+        style={{ background: "linear-gradient(160deg, rgb(238, 244, 232) 0%, rgb(255, 255, 255) 50%, rgb(245, 245, 239) 100%)" }}
+      >
         <InsightBackground />
         
         <DashboardHeader />
         
-        <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-20 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start grow relative z-10">
+        <main className="w-full max-w-6xl mx-auto px-6 py-12 md:py-32 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start grow relative z-10">
           <InsightContent insightType={currentInsight.type} />
         </main>
 

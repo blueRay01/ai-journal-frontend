@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-function EmailField({ value, onChange }) {
+function EmailField({ value, onChange, disabled }) {
   return (
     <div className="space-y-2">
       <label
@@ -19,17 +19,19 @@ function EmailField({ value, onChange }) {
         <input
           id="email"
           type="email"
+          required
+          disabled={disabled}
           value={value}
           onChange={onChange}
           placeholder="you@example.com"
-          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base"
+          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base disabled:opacity-50"
         />
       </div>
     </div>
   );
 }
 
-function PasswordField({ showForgot, value, onChange }) {
+function PasswordField({ showForgot, value, onChange, disabled }) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -54,10 +56,12 @@ function PasswordField({ showForgot, value, onChange }) {
         <input
           id="password"
           type={visible ? "text" : "password"}
+          required
+          disabled={disabled}
           value={value}
           onChange={onChange}
           placeholder="••••••••"
-          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-12 transition-all outline-none text-base"
+          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-12 transition-all outline-none text-base disabled:opacity-50"
         />
         <button
           type="button"
@@ -77,21 +81,38 @@ export default function AuthPage() {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); 
+  const [error, setError] = useState(""); 
+  const [loading, setLoading] = useState(false); 
+  
   const navigate = useNavigate();
-  const { login } = useAuth();
+  // We are pulling BOTH functions from your real Firebase Context here!
+  const { login, signup } = useAuth(); 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock authentication with dummy credentials
-    if (email === "aura@auramail.com" && password === "12345") {
-      const userData = {
-        email: email,
-        name: "Aura User",
-      };
-      login(userData);
+    setError("");
+
+    // Prevent submitting if passwords don't match on signup
+    if (tab === "signup" && password !== confirmPassword) {
+      return setError("Passwords do not match");
+    }
+
+    setLoading(true);
+
+    try {
+      if (tab === "signup") {
+        await signup(email, password); // REAL FIREBASE SIGNUP
+      } else {
+        await login(email, password); // REAL FIREBASE LOGIN
+      }
+      
+      // If successful, navigate to the dashboard
       navigate('/dashboard');
-    } else if (email && password) {
-      alert("Invalid credentials. Use aura@auramail.com and password 12345");
+    } catch (err) {
+      setError("Authentication Error: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,15 +154,15 @@ export default function AuthPage() {
           <div className="relative z-10">
 
             {/* Tab toggle — sliding pill */}
-            <div className="relative bg-surface-container/50 backdrop-blur-md p-1 rounded-full flex mb-8 border border-white/30">
-              {/* Sliding pill indicator */}
+            <div className="relative bg-surface-container/50 backdrop-blur-md p-1 rounded-full flex mb-6 border border-white/30">
               <div
                 className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-primary rounded-full shadow-sm transition-transform duration-300 ease-in-out ${
                   tab === "signup" ? "translate-x-[calc(100%+8px)]" : "translate-x-0"
                 }`}
               />
               <button
-                onClick={() => setTab("login")}
+                type="button"
+                onClick={() => { setTab("login"); setError(""); }}
                 className={`relative flex-1 py-2 text-center rounded-full text-sm font-medium transition-colors duration-300 ${
                   tab === "login" ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"
                 }`}
@@ -149,7 +170,8 @@ export default function AuthPage() {
                 Log in
               </button>
               <button
-                onClick={() => setTab("signup")}
+                type="button"
+                onClick={() => { setTab("signup"); setError(""); }}
                 className={`relative flex-1 py-2 text-center rounded-full text-sm font-medium transition-colors duration-300 ${
                   tab === "signup" ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"
                 }`}
@@ -158,13 +180,25 @@ export default function AuthPage() {
               </button>
             </div>
 
+            {/* Error Message Display */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-500 text-sm text-center font-medium">
+                {error}
+              </div>
+            )}
+
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-              <EmailField value={email} onChange={(e) => setEmail(e.target.value)} />
+              <EmailField 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                disabled={loading}
+              />
               <PasswordField 
                 showForgot={tab === "login"} 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
+                disabled={loading}
               />
 
               {/* Confirm password — only on signup */}
@@ -183,8 +217,12 @@ export default function AuthPage() {
                     <input
                       id="confirm-password"
                       type="password"
+                      required
+                      disabled={loading}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base"
+                      className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -193,12 +231,19 @@ export default function AuthPage() {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full bg-primary hover:bg-on-secondary-container text-on-primary font-semibold py-4 rounded-full transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(83,97,72,0.4)] hover:shadow-[0_15px_25px_-10px_rgba(83,97,72,0.5)] flex items-center justify-center gap-2 group mt-2"
+                disabled={loading}
+                className={`w-full bg-primary hover:bg-on-secondary-container text-on-primary font-semibold py-4 rounded-full transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(83,97,72,0.4)] hover:shadow-[0_15px_25px_-10px_rgba(83,97,72,0.5)] flex items-center justify-center gap-2 group mt-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                {tab === "login" ? "Continue to Journal" : "Create Account"}
-                <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">
-                  arrow_forward
-                </span>
+                {loading ? (
+                  "Connecting..."
+                ) : (
+                  <>
+                    {tab === "login" ? "Continue to Journal" : "Create Account"}
+                    <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </>
+                )}
               </button>
             </form>
           </div>

@@ -1,78 +1,101 @@
 // src/components/dashboard/EnergyFlowCard.jsx
+const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
+const VALUES = [38, 52, 45, 68, 72, 60, 55]; // 0-100 scale
 
-// mb-* values drive each dot's vertical position on the faux chart.
-// Adjust these to change the "shape" of the line.
-const DATA_POINTS = [
-  { day: "M", mbClass: "mb-12",  isToday: false },
-  { day: "T", mbClass: "mb-16",  isToday: false },
-  { day: "W", mbClass: "mb-8",   isToday: false },
-  { day: "T", mbClass: "mb-20",  isToday: false },
-  { day: "F", mbClass: "mb-24",  isToday: false },
-  { day: "S", mbClass: "mb-14",  isToday: false },
-  { day: "S", mbClass: "mb-[72px]", isToday: true  },
-];
+function buildPath(values, w, h, pad) {
+  const xStep = (w - pad * 2) / (values.length - 1);
+  const points = values.map((v, i) => ({
+    x: pad + i * xStep,
+    y: h - pad - (v / 100) * (h - pad * 2),
+  }));
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    const cpx = (points[i - 1].x + points[i].x) / 2;
+    d += ` C ${cpx} ${points[i - 1].y}, ${cpx} ${points[i].y}, ${points[i].x} ${points[i].y}`;
+  }
+  return { d, points };
+}
 
 export default function EnergyFlowCard() {
+  const W = 380;
+  const H = 120;
+  const PAD = 16;
+  const { d, points } = buildPath(VALUES, W, H, PAD);
+
+  // Build fill path (close below the line)
+  const fillD =
+    d +
+    ` L ${points[points.length - 1].x} ${H} L ${points[0].x} ${H} Z`;
+
+  const todayIdx = VALUES.length - 1; // "S" is today
+
   return (
-    <div className="md:col-span-8 bg-surface-container-low/85 backdrop-blur-xl border border-white/50 rounded-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex flex-col">
+    <div className="md:col-span-7 bg-[#f2f2ee] rounded-2xl p-5 flex flex-col gap-3">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-headline-md text-on-surface text-[24px] font-medium leading-snug">
-          Energy Flow
-        </h3>
-        <span className="font-label-caps text-on-surface-variant bg-surface-variant/50 px-3 py-1 rounded-full text-xs tracking-widest uppercase">
-          Last 7 Days
-        </span>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-[#3a3a35]">Energy Flow</span>
+        <span className="text-xs text-[#888880]">Last 7 Days</span>
       </div>
 
-      {/* Chart area */}
-      <div className="flex-grow flex items-end justify-between gap-2 h-48 relative">
+      {/* SVG chart */}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width="100%"
+        style={{ overflow: "visible" }}
+      >
+        {/* Fill */}
+        <defs>
+          <linearGradient id="ef-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#5a7a5a" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#5a7a5a" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={fillD} fill="url(#ef-fill)" />
 
-        {/* Horizontal grid lines */}
-        <div className="absolute inset-0 flex flex-col justify-between py-4 pointer-events-none">
-          <div className="border-b border-outline-variant/30 w-full h-0" />
-          <div className="border-b border-outline-variant/30 w-full h-0" />
-          <div className="border-b border-outline-variant/30 w-full h-0" />
-        </div>
+        {/* Line */}
+        <path
+          d={d}
+          fill="none"
+          stroke="#5a7a5a"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
 
-        {/* Dots + day labels */}
-        <div className="w-full flex justify-between items-end h-full pb-4 px-2 relative z-10">
-          {DATA_POINTS.map(({ day, mbClass, isToday }, i) => (
-            <div key={i} className="flex flex-col items-center gap-2">
-              {isToday ? (
-                <div
-                  className={`w-4 h-4 rounded-full bg-secondary ${mbClass} shadow-[0_0_15px_rgba(98,87,139,0.6)] border-2 border-surface`}
-                />
-              ) : (
-                <div
-                  className={`w-3 h-3 rounded-full bg-primary ${mbClass} shadow-[0_0_10px_rgba(39,68,47,0.5)]`}
-                />
-              )}
-              <span
-                className={`font-label-sm text-xs ${
-                  isToday ? "text-on-surface font-bold" : "text-on-surface-variant"
-                }`}
-              >
-                {day}
-              </span>
-            </div>
-          ))}
-        </div>
+        {/* Dots */}
+        {points.map((pt, i) => (
+          <g key={i}>
+            {i === todayIdx ? (
+              <>
+                {/* Today: filled purple dot */}
+                <circle cx={pt.x} cy={pt.y} r={6} fill="#7c6fa0" />
+                <circle cx={pt.x} cy={pt.y} r={3} fill="white" />
+              </>
+            ) : (
+              <>
+                {/* Other days: small dark dot */}
+                <circle cx={pt.x} cy={pt.y} r={3.5} fill="#3a4a3a" />
+              </>
+            )}
+          </g>
+        ))}
+      </svg>
 
-        {/* Decorative SVG curve */}
-        <svg
-          className="absolute inset-0 h-[80%] w-full top-[10%] pointer-events-none"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <path
-            className="text-primary/30"
-            d="M 5,60 C 20,40 35,70 50,20 C 65,-10 80,45 95,30"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-        </svg>
+      {/* Day labels */}
+      <div className="flex justify-between px-[16px]">
+        {DAYS.map((d, i) => (
+          <span
+            key={i}
+            className={`text-xs ${
+              i === todayIdx
+                ? "text-[#7c6fa0] font-semibold"
+                : "text-[#aaa89a]"
+            }`}
+          >
+            {d}
+          </span>
+        ))}
       </div>
     </div>
   );

@@ -11,7 +11,10 @@ import FocusCard from "../components/report/FocusCard";
 export default function ReportPage() {
   const navigate = useNavigate();
   return (
-    <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-32 antialiased">
+    <div 
+      className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-[120px] antialiased"
+      style={{ background: "linear-gradient(160deg, rgb(238, 244, 232) 0%, rgb(255, 255, 255) 50%, rgb(245, 245, 239) 100%)" }}
+    >
 
       {/* Background — same as Dashboard & History */}
       <div className="aura-top-right" />
@@ -22,7 +25,7 @@ export default function ReportPage() {
       {/* Ambient glow behind header */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-primary-fixed/50 rounded-full blur-[140px] -z-10 pointer-events-none" />
 
-      <main className="w-full max-w-2xl mx-auto px-6 pt-8 pb-24 flex flex-col gap-8 relative z-10">
+      <main className="w-full max-w-2xl mx-auto px-6 pt-32 pb-24 flex flex-col gap-8 relative z-10">
 
         {/* Page header */}
         <header className="flex flex-col items-center text-center mb-4">

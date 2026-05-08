@@ -23,24 +23,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing auth state on mount
+  // Firebase automatically checks for existing sessions
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsAuthenticated(!!currentUser); // true if user exists, false if null
-      
-      // THIS IS THE FIX: It tells React "Firebase is done checking, show the website!"
+      setIsAuthenticated(!!currentUser); 
       setLoading(false); 
     });
 
-    return unsubscribe; // Cleanup on unmount
+    return unsubscribe; 
   }, []);
 
-  const login = (userData) => {
-    setIsAuthenticated(true);
-    setUser(userData);
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("user", JSON.stringify(userData));
+  const login = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  // This is the function your page was begging for!
+  const signup = (email, password) => {
+    return createUserWithEmailAndPassword(auth, email, password);
   };
 
   const logout = () => {
@@ -51,12 +51,13 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     user,
     login,
+    signup, 
     logout,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
