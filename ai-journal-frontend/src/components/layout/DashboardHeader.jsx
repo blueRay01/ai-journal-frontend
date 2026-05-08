@@ -119,6 +119,17 @@ export default function DashboardHeader() {
         >
           <button
             type="button"
+            onClick={() => {
+              setIsDropdownOpen(false);
+              navigate('/settings');
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-variant dark:hover:bg-surface-variant/10 transition-colors duration-200 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined">settings</span>
+            Settings
+          </button>
+          <button
+            type="button"
             onClick={openLogoutConfirm}
             className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-variant dark:hover:bg-surface-variant/10 transition-colors duration-200 flex items-center gap-2"
           >

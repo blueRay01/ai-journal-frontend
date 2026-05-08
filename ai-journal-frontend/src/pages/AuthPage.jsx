@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 function EmailField({ value, onChange, disabled }) {
   return (
@@ -82,6 +84,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState(""); 
+  const [nickname, setNickname] = useState(""); 
   const [error, setError] = useState(""); 
   const [loading, setLoading] = useState(false); 
   
@@ -102,12 +105,21 @@ export default function AuthPage() {
 
     try {
       if (tab === "signup") {
-        await signup(email, password); // REAL FIREBASE SIGNUP
+        const userCredential = await signup(email, password); // REAL FIREBASE SIGNUP
+        
+        // Save nickname to Firestore after successful signup
+        if (userCredential.user) {
+          await setDoc(doc(db, "users", userCredential.user.uid), {
+            nickname: nickname.trim(),
+            email: email,
+            createdAt: new Date()
+          });
+        }
       } else {
         await login(email, password); // REAL FIREBASE LOGIN
       }
       
-      // If successful, navigate to the dashboard
+      // If successful, navigate to dashboard
       navigate('/dashboard');
     } catch (err) {
       setError("Authentication Error: " + err.message);
@@ -200,6 +212,33 @@ export default function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)} 
                 disabled={loading}
               />
+
+              {/* Nickname — only on signup */}
+              {tab === "signup" && (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="nickname"
+                    className="block text-xs font-bold tracking-widest uppercase text-on-surface-variant ml-2"
+                  >
+                    Nickname
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">
+                      person
+                    </span>
+                    <input
+                      id="nickname"
+                      type="text"
+                      required
+                      disabled={loading}
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder="Enter your nickname"
+                      className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Confirm password — only on signup */}
               {tab === "signup" && (

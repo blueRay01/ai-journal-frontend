@@ -214,6 +214,7 @@ export default function CheckInPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [todayEntry, setTodayEntry] = useState(null);
 
   useEffect(() => {
     const fetchInternetDateAndCheckStatus = async () => {
@@ -254,7 +255,21 @@ export default function CheckInPage() {
       );
 
       const querySnapshot = await getDocs(q);
-      setHasCheckedInToday(!querySnapshot.empty);
+      const hasEntry = !querySnapshot.empty;
+      setHasCheckedInToday(hasEntry);
+      
+      if (hasEntry) {
+        const entryDoc = querySnapshot.docs[0];
+        const entryData = entryDoc.data();
+        setTodayEntry(entryData);
+        
+        // Set form values from today's entry
+        setExerciseChecked(entryData.exercise || false);
+        setSleepQuality(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.sleepQuality])));
+        setMood(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.mood])));
+        setStressLevel(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.stressLevel])));
+        setWinsText(entryData.reflection || "");
+      }
     } catch (error) {
       console.error("Error checking today's entry:", error);
       setHasCheckedInToday(false);

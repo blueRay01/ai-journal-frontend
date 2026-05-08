@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import StreakCard from "../components/dashboard/StreakCard";
@@ -18,9 +18,26 @@ export default function DashboardPage() {
   const [entryDate, setEntryDate] = useState(null);
   const [resonancePct, setResonancePct] = useState(0);
   const [activeFocus, setActiveFocus] = useState(null);
+  const [userNickname, setUserNickname] = useState("");
+  const [greeting, setGreeting] = useState("Good Morning");
 
   useEffect(() => {
     if (!user) return;
+    
+    const fetchUserData = async () => {
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserNickname(userData.nickname || "");
+        }
+      } catch (err) {
+        console.error("Failed to load user data:", err);
+      }
+    };
+    
     const fetchLatestTimeline = async () => {
       try {
         const q = query(
@@ -38,8 +55,28 @@ export default function DashboardPage() {
         console.error("Failed to load timeline:", err);
       }
     };
+    
+    fetchUserData();
     fetchLatestTimeline();
   }, [user]);
+  
+  useEffect(() => {
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) {
+        setGreeting("Good Morning");
+      } else if (hour < 17) {
+        setGreeting("Good Afternoon");
+      } else {
+        setGreeting("Good Evening");
+      }
+    };
+    
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div
@@ -55,7 +92,7 @@ export default function DashboardPage() {
       <main className="relative z-10 max-w-[960px] mx-auto px-4 md:px-8 pt-[88px] pb-8 flex flex-col gap-6">
         <div className="mb-2">
           <h1 className="font-display text-[42px] md:text-[52px] font-light leading-tight tracking-tight text-[#2a3a2a]">
-            Good Morning, Alex.
+            {greeting}{userNickname ? `, ${userNickname}` : ""}.
           </h1>
           <p className="text-[16px] text-[#6a7a6a] mt-2 leading-relaxed">
             Take a moment to center yourself today.

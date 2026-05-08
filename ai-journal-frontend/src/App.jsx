@@ -12,6 +12,7 @@ import HistoryPage from "./pages/HistoryPage";
 import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 import AIInsightPage from "./pages/AIInsightPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function LandingPage() {
   return (
@@ -75,6 +76,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AIInsightPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

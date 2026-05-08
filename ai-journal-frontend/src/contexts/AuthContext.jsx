@@ -5,7 +5,8 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  signOut 
+  signOut,
+  updatePassword 
 } from "firebase/auth";
 
 const AuthContext = createContext();
@@ -47,12 +48,20 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   };
 
+  const changePassword = (newPassword) => {
+    if (!user) {
+      throw new Error("No user is currently signed in");
+    }
+    return updatePassword(user, newPassword);
+  };
+
   const value = {
     isAuthenticated,
     user,
     login,
     signup, 
     logout,
+    changePassword,
   };
 
   return (
