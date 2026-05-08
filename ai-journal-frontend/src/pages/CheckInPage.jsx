@@ -4,6 +4,7 @@ import BottomNav from "../components/layout/BottomNav";
 import { useState } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import { useAuth } from "../contexts/AuthContext";
+import { saveJournalEntry } from "../services/journalService";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
