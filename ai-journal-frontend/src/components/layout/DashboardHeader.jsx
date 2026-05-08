@@ -72,7 +72,7 @@ export default function DashboardHeader() {
   return (
     <>
       {/* Desktop */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 py-6 bg-transparent text-primary font-label-caps tracking-widest uppercase text-xs z-40 relative">
+      <header className="hidden md:flex justify-between items-center w-full px-8 py-6 bg-transparent text-primary font-label-caps tracking-widest uppercase text-xs z-40 sticky top-0 left-0 right-0">
         <div
           onClick={() => navigate('/dashboard')}
           className="text-xl font-bold tracking-tight text-primary cursor-pointer hover:opacity-70 transition-opacity duration-300"
@@ -92,7 +92,7 @@ export default function DashboardHeader() {
       </header>
 
       {/* Mobile */}
-      <header className="flex md:hidden justify-between items-center w-full px-8 py-6 bg-transparent text-primary z-40 relative">
+      <header className="flex md:hidden justify-between items-center w-full px-8 py-6 bg-transparent text-primary z-40 sticky top-0 left-0 right-0">
         <div
           onClick={() => navigate('/dashboard')}
           className="text-xl font-bold tracking-tight font-display cursor-pointer"

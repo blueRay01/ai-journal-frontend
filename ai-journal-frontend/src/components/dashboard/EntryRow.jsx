@@ -18,7 +18,7 @@ function scoreVariant(score) {
   // High score → secondary (purple), low score → tertiary (warm brown)
   return score >= 6
     ? "bg-secondary/15 text-secondary"
-    : "bg-tertiary-container/20 text-tertiary";
+    : "bg-secondary/15 text-secondary";
 }
 
 export default function EntryRow({ emoji, timestamp, score, preview, onClick }) {
@@ -89,7 +89,7 @@ export default function EntryRow({ emoji, timestamp, score, preview, onClick }) 
         className={[
           "px-4 pb-4",
           "transition-[max-height,opacity] duration-200 ease-out",
-          isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0",
+          isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
           "overflow-hidden",
         ].join(" ")}
       >

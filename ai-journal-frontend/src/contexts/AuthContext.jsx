@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Firebase automatically checks for existing sessions
+  // Check for existing auth state on mount
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -36,12 +36,11 @@ export function AuthProvider({ children }) {
     return unsubscribe; // Cleanup on unmount
   }, []);
 
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const login = (userData) => {
+    setIsAuthenticated(true);
+    setUser(userData);
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const logout = () => {
@@ -52,13 +51,12 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     user,
     login,
-    signup,
     logout,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

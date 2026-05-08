@@ -1,8 +1,9 @@
+// src/pages/AuthPage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-function EmailField({ value, onChange, disabled }) {
+function EmailField({ value, onChange }) {
   return (
     <div className="space-y-2">
       <label
@@ -18,19 +19,17 @@ function EmailField({ value, onChange, disabled }) {
         <input
           id="email"
           type="email"
-          required
-          disabled={disabled}
           value={value}
           onChange={onChange}
           placeholder="you@example.com"
-          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base disabled:opacity-50"
+          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base"
         />
       </div>
     </div>
   );
 }
 
-function PasswordField({ showForgot, value, onChange, disabled }) {
+function PasswordField({ showForgot, value, onChange }) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -55,12 +54,10 @@ function PasswordField({ showForgot, value, onChange, disabled }) {
         <input
           id="password"
           type={visible ? "text" : "password"}
-          required
-          disabled={disabled}
           value={value}
           onChange={onChange}
           placeholder="••••••••"
-          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-12 transition-all outline-none text-base disabled:opacity-50"
+          className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-12 transition-all outline-none text-base"
         />
         <button
           type="button"
@@ -80,33 +77,21 @@ export default function AuthPage() {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  
   const navigate = useNavigate();
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      if (tab === "signup") {
-        // REAL FIREBASE SIGNUP
-        await signup(email, password);
-      } else {
-        // REAL FIREBASE LOGIN
-        await login(email, password);
-      }
-      // If successful, navigate to the sanctuary
+    // Mock authentication with dummy credentials
+    if (email === "aura@auramail.com" && password === "12345") {
+      const userData = {
+        email: email,
+        name: "Aura User",
+      };
+      login(userData);
       navigate('/dashboard');
-    } catch (err) {
-      // Catch real Firebase errors (e.g. invalid-email, user-not-found)
-      setError(err.message);
-      alert("Authentication Error: " + err.message);
-    } finally {
-      setLoading(false);
+    } else if (email && password) {
+      alert("Invalid credentials. Use aura@auramail.com and password 12345");
     }
   };
 
@@ -149,13 +134,13 @@ export default function AuthPage() {
 
             {/* Tab toggle — sliding pill */}
             <div className="relative bg-surface-container/50 backdrop-blur-md p-1 rounded-full flex mb-8 border border-white/30">
+              {/* Sliding pill indicator */}
               <div
                 className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-primary rounded-full shadow-sm transition-transform duration-300 ease-in-out ${
                   tab === "signup" ? "translate-x-[calc(100%+8px)]" : "translate-x-0"
                 }`}
               />
               <button
-                type="button"
                 onClick={() => setTab("login")}
                 className={`relative flex-1 py-2 text-center rounded-full text-sm font-medium transition-colors duration-300 ${
                   tab === "login" ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"
@@ -164,7 +149,6 @@ export default function AuthPage() {
                 Log in
               </button>
               <button
-                type="button"
                 onClick={() => setTab("signup")}
                 className={`relative flex-1 py-2 text-center rounded-full text-sm font-medium transition-colors duration-300 ${
                   tab === "signup" ? "text-on-primary" : "text-on-surface-variant hover:text-on-surface"
@@ -176,19 +160,14 @@ export default function AuthPage() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-              <EmailField 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                disabled={loading}
-              />
+              <EmailField value={email} onChange={(e) => setEmail(e.target.value)} />
               <PasswordField 
                 showForgot={tab === "login"} 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                disabled={loading}
               />
 
-              {/* Confirm password — only on signup (UI Only) */}
+              {/* Confirm password — only on signup */}
               {tab === "signup" && (
                 <div className="space-y-2">
                   <label
@@ -204,7 +183,6 @@ export default function AuthPage() {
                     <input
                       id="confirm-password"
                       type="password"
-                      required
                       placeholder="••••••••"
                       className="w-full bg-white/50 backdrop-blur-sm border border-outline-variant/30 text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl py-3 pl-12 pr-4 transition-all outline-none text-base"
                     />
@@ -215,19 +193,12 @@ export default function AuthPage() {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
-                className={`w-full bg-primary hover:bg-on-secondary-container text-on-primary font-semibold py-4 rounded-full transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(83,97,72,0.4)] hover:shadow-[0_15px_25px_-10px_rgba(83,97,72,0.5)] flex items-center justify-center gap-2 group mt-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className="w-full bg-primary hover:bg-on-secondary-container text-on-primary font-semibold py-4 rounded-full transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(83,97,72,0.4)] hover:shadow-[0_15px_25px_-10px_rgba(83,97,72,0.5)] flex items-center justify-center gap-2 group mt-2"
               >
-                {loading ? (
-                  "Establishing connection..."
-                ) : (
-                  <>
-                    {tab === "login" ? "Continue to Journal" : "Create Account"}
-                    <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">
-                      arrow_forward
-                    </span>
-                  </>
-                )}
+                {tab === "login" ? "Continue to Journal" : "Create Account"}
+                <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">
+                  arrow_forward
+                </span>
               </button>
             </form>
           </div>
