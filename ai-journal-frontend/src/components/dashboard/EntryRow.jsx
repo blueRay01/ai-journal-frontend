@@ -18,7 +18,7 @@ function scoreVariant(score) {
   // High score → secondary (purple), low score → tertiary (warm brown)
   return score >= 6
     ? "bg-secondary/15 text-secondary"
-    : "bg-tertiary-container/20 text-tertiary";
+    : "bg-secondary/15 text-secondary";
 }
 
 export default function EntryRow({ emoji, timestamp, score, preview, onClick }) {
