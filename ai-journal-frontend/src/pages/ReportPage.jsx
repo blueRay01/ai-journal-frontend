@@ -12,10 +12,22 @@ import HighFrictionCard from "../components/report/HighFrictionCard";
 import CorrelationCard from "../components/report/CorrelationCard";
 import FocusCard from "../components/report/FocusCard";
 
+// Returns the Monday of the current week at 00:00:00
+function getStartOfWeek() {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun
+  const diff = (day === 0 ? -6 : 1) - day; // shift so Mon = start
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
 export default function ReportPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [entries, setEntries] = useState([]);
+  const [weekEntries, setWeekEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [streakData, setStreakData] = useState({ days: 0, label: "Consistent clarity" });
   const [peakDay, setPeakDay] = useState({ day: "", description: "" });
@@ -34,20 +46,32 @@ export default function ReportPage() {
         );
 
         const querySnapshot = await getDocs(q);
-        const entriesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate()
-        }));
+        const entriesData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate(),
+            // Normalise aiInsight so cards always have a consistent shape
+            aiInsight: data.aiInsight ?? data.insight ?? data.ai ?? data.analysis ?? null,
+          };
+        });
 
         setEntries(entriesData);
         calculateReportData(entriesData);
 
+        // Filter to current week (Mon – now) for AI-powered cards
+        const weekStart = getStartOfWeek();
+        const thisWeek = entriesData.filter(
+          e => e.createdAt && e.createdAt >= weekStart
+        );
+        setWeekEntries(thisWeek);
+
         if (entriesData.length > 0) {
           const latest = entriesData[0].createdAt;
           const oldest = entriesData[entriesData.length - 1].createdAt;
-          const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          setDateRange(`${formatDate(oldest)} - ${formatDate(latest)}`);
+          const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          setDateRange(`${fmt(oldest)} – ${fmt(latest)}`);
         }
       } catch (error) {
         console.error("Error fetching entries:", error);
@@ -65,106 +89,73 @@ export default function ReportPage() {
       return;
     }
 
-    // Calculate consecutive day streak (same logic as StreakCard)
+    // ── Streak ──────────────────────────────────────────────────────────────
     let streak = 0;
     let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0); // Start of today
+    currentDate.setHours(0, 0, 0, 0);
 
-    // Sort entries by date (newest first)
-    const sortedEntries = entries.sort((a, b) => {
-      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-      return dateB - dateA;
+    const sortedEntries = [...entries].sort((a, b) => {
+      const da = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+      const db_ = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+      return db_ - da;
     });
 
-    // Check if there's an entry for today
     const todayEntry = sortedEntries.find(entry => {
-      const entryDate = entry.createdAt?.toDate?.() || new Date(entry.createdAt);
-      entryDate.setHours(0, 0, 0, 0);
-      return entryDate.getTime() === currentDate.getTime();
+      const d = new Date(entry.createdAt); d.setHours(0, 0, 0, 0);
+      return d.getTime() === currentDate.getTime();
     });
+    if (!todayEntry) currentDate.setDate(currentDate.getDate() - 1);
 
-    // If no entry for today, check yesterday
-    if (!todayEntry) {
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
-
-    // Count consecutive days backwards
     while (true) {
-      const entryForDate = sortedEntries.find(entry => {
-        const entryDate = entry.createdAt?.toDate?.() || new Date(entry.createdAt);
-        entryDate.setHours(0, 0, 0, 0);
-        return entryDate.getTime() === currentDate.getTime();
+      const found = sortedEntries.find(entry => {
+        const d = new Date(entry.createdAt); d.setHours(0, 0, 0, 0);
+        return d.getTime() === currentDate.getTime();
       });
-
-      if (entryForDate) {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else {
-        break;
-      }
+      if (found) { streak++; currentDate.setDate(currentDate.getDate() - 1); }
+      else break;
     }
 
     setStreakData({ days: streak, label: streak > 0 ? "Consistent clarity" : "Start your journey" });
 
-    // Find peak day (highest wellness score)
-    let peakEntry = null;
-    let peakScore = -1;
-
-    // Find friction day (lowest wellness score)
-    let frictionEntry = null;
-    let frictionScore = Infinity;
-
+    // ── Peak / Friction ──────────────────────────────────────────────────────
     const MOOD_SCORES   = { sad: 2, anxious: 4, neutral: 5, positive: 7, happy: 9 };
     const SLEEP_SCORES  = { restless: 2, poor: 4, neutral: 5, good: 7, excellent: 9 };
     const STRESS_SCORES = { overwhelmed: 1, tense: 3, neutral: 5, moderate: 7, calm: 9 };
 
     const deriveScore = (entry) => {
-      // Trust stored summaryScore first
       if (entry.summaryScore != null) return Number(entry.summaryScore);
-      // Fallback: calculate from fields (for older entries without summaryScore)
-      const moodScore     = MOOD_SCORES[entry.mood]          ?? 5;
-      const sleepScore    = SLEEP_SCORES[entry.sleepQuality] ?? 5;
-      const stressScore   = STRESS_SCORES[entry.stressLevel] ?? 5;
-      const exerciseBonus = entry.exercise ? 0.5 : 0;
-      return Math.min(Math.round((moodScore + sleepScore + stressScore) / 3 + exerciseBonus), 10);
+      const m = MOOD_SCORES[entry.mood]          ?? 5;
+      const s = SLEEP_SCORES[entry.sleepQuality] ?? 5;
+      const t = STRESS_SCORES[entry.stressLevel] ?? 5;
+      return Math.min(Math.round((m + s + t) / 3 + (entry.exercise ? 0.5 : 0)), 10);
     };
+
+    let peakEntry = null, peakScore = -1;
+    let frictionEntry = null, frictionScore = Infinity;
 
     entries.forEach(entry => {
       const score = deriveScore(entry);
-
-      if (score > peakScore) {
-        peakScore = score;
-        peakEntry = entry;
-      }
-
-      if (score < frictionScore) {
-        frictionScore = score;
-        frictionEntry = entry;
-      }
+      if (score > peakScore)     { peakScore = score;     peakEntry = entry; }
+      if (score < frictionScore) { frictionScore = score; frictionEntry = entry; }
     });
 
     if (peakEntry) {
-      const score = deriveScore(peakEntry);
-      const dayName = peakEntry.createdAt.toLocaleDateString('en-US', { weekday: 'long' });
-      const mood = peakEntry.mood || 'neutral';
-      const stress = peakEntry.stressLevel || 'neutral';
+      const score   = deriveScore(peakEntry);
+      const dayName = peakEntry.createdAt.toLocaleDateString("en-US", { weekday: "long" });
       setPeakDay({
         day: dayName,
-        description: `High wellness score (${score}/10) with ${mood} mood and ${stress} stress levels.`,
-        score
+        description: `High wellness score (${score}/10) with ${peakEntry.mood || "neutral"} mood and ${peakEntry.stressLevel || "neutral"} stress levels.`,
+        score,
       });
     }
 
     if (frictionEntry) {
-      const score = deriveScore(frictionEntry);
-      const dayName = frictionEntry.createdAt.toLocaleDateString('en-US', { weekday: 'long' });
-      const mood = frictionEntry.mood || 'neutral';
-      const stress = frictionEntry.stressLevel || 'neutral';
+      const score   = deriveScore(frictionEntry);
+      const dayName = frictionEntry.createdAt.toLocaleDateString("en-US", { weekday: "long" });
       setFrictionDay({
         day: dayName,
-        description: `Lower wellness day (${score}/10) with ${mood} mood and ${stress} stress levels.`,
-        score
+        description: `Lower wellness day (${score}/10) with ${frictionEntry.mood || "neutral"} mood and ${frictionEntry.stressLevel || "neutral"} stress levels.`,
+        score,
       });
     }
   };
@@ -210,10 +201,12 @@ export default function ReportPage() {
         </header>
 
         <StreakRingCard days={streakData.days} label={streakData.label} />
-        {peakDay.day && <PeakResonanceCard day={peakDay.day} description={peakDay.description} score={peakDay.score} />}
-        {frictionDay.day && <HighFrictionCard day={frictionDay.day} description={frictionDay.description} score={frictionDay.score} />}
-        <CorrelationCard entries={entries} />
-        <FocusCard entries={entries} />
+        {peakDay.day     && <PeakResonanceCard day={peakDay.day}     description={peakDay.description}     score={peakDay.score} />}
+        {frictionDay.day && <HighFrictionCard  day={frictionDay.day} description={frictionDay.description} score={frictionDay.score} />}
+
+        {/* Pass this week's entries (with aiInsight) to the AI-powered cards */}
+        <CorrelationCard entries={weekEntries.length >= 3 ? weekEntries : entries} />
+        <FocusCard       entries={weekEntries.length >= 1 ? weekEntries : entries} />
       </main>
 
       <BottomNav activePage="report" onNavigate={navigate} />
