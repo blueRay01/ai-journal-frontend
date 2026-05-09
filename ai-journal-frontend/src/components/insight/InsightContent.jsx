@@ -2,20 +2,28 @@
 import InsightImage from "./InsightImage";
 import InsightPanel from "./InsightPanel";
 
-export default function InsightContent({ insightType, title, content, timeline, showTomorrowPlanToday, entryDate }) {
+export default function InsightContent({
+  insightType,
+  title,
+  content,
+  rawContent,
+  timeline,
+  showTomorrowPlanToday,
+  entryDate,
+}) {
   return (
     <>
       {/* Left Side: Image + Symbols */}
       <div className="col-span-1 md:col-span-5 flex flex-col gap-8 order-2 md:order-1 self-stretch">
-        <InsightImage insightType={insightType} />
+        <InsightImage insightType={insightType} insightContent={rawContent} />
       </div>
-      
+
       {/* Right Side: Text in Glass Panel */}
       <div className="col-span-1 md:col-span-7 order-1 md:order-2 self-stretch">
-        <InsightPanel 
-          title={title} 
-          content={content} 
-          timeline={timeline} 
+        <InsightPanel
+          title={title}
+          content={content}
+          timeline={timeline}
           showTomorrowPlanToday={showTomorrowPlanToday}
           entryDate={entryDate}
         />

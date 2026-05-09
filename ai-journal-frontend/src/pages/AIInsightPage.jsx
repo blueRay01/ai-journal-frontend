@@ -257,6 +257,7 @@ export default function AIInsightPage() {
                 ? "We're generating your insight from today's entry…"
                 : insight.content
             }
+            rawContent={insight.content}  
             timeline={timeline}
             showTomorrowPlanToday={showTomorrowPlanToday}
             entryDate={entryDate}

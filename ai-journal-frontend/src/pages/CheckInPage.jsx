@@ -4,7 +4,7 @@ import BottomNav from "../components/layout/BottomNav";
 import { useState, useEffect } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import { useAuth } from "../contexts/AuthContext";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, orderBy } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 const CHECKIN_STORAGE_KEY = "ai_journal_latest_checkin";
