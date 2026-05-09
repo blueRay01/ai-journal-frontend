@@ -141,7 +141,7 @@ const FALLBACK_URL =
 // ─── AI theme selection ───────────────────────────────────────────────────────
 async function fetchThemesForInsight(insightContent) {
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("/api/themes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -312,7 +312,7 @@ export default function InsightImage({
 
         {/* Shimmer while loading */}
         {!ready && (
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-stone-100 to-emerald-50 animate-pulse" />
+          <div className="absolute inset-0 bg-linear-to-br from-emerald-50 via-stone-100 to-emerald-50 animate-pulse" />
         )}
 
         {/* All slides stacked; opacity controls visibility */}
