@@ -46,22 +46,25 @@ function UncheckDialog({ title, isPastDeadline, onConfirm, onCancel }) {
   );
 }
 
-export default function TimelineProgressionCard({ timeline = [], entryDate = null, onProgressChange, onActiveFocusChange, showTomorrowPlanToday = false, isFirstDay = false, streakBroken = false }) {
+export default function TimelineProgressionCard({ timeline = [], entryDate = null, onProgressChange, onActiveFocusChange, onTimelineComplete, showTomorrowPlanToday = false, isFirstDay = false, streakBroken = false }) {
   const [checked, setChecked] = useState({});
   const [wasLate, setWasLate] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [currentTime, setCurrentTime] = useState(nowMinutes());
+  const [today, setToday] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  });
 
   const isUnlocked = (() => {
     if (!entryDate) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const entry = new Date(entryDate);
     entry.setHours(0, 0, 0, 0);
-    return entry < today;
+    return entry.getTime() <= today;
   })();
 
-  const isTimelineFrozen = showTomorrowPlanToday;
+  const isTimelineFrozen = isFirstDay && streakBroken;
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -70,7 +73,7 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
   });
 
   const getPlanInfo = () => {
-    if (showTomorrowPlanToday) {
+    if (isTimelineFrozen) {
       return { title: "Tomorrow's Plan", status: "Inactive" };
     }
     if (isUnlocked) {
@@ -82,9 +85,32 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
   const planInfo = getPlanInfo();
 
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(nowMinutes()), 60_000);
-    return () => clearInterval(interval);
-  }, []);
+  const sync = () => {
+    setCurrentTime(nowMinutes());
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setToday(d.getTime());
+  };
+
+  const interval = setInterval(sync, 60_000);
+  window.addEventListener("focus", sync);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") sync();
+  });
+
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener("focus", sync);
+    document.removeEventListener("visibilitychange", sync);
+  };
+}, []);
+
+  // Recheck today's date when entryDate changes (user logs in)
+  useEffect(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setToday(d.getTime());
+  }, [entryDate]);
 
   useEffect(() => {
     if (timeline.length === 0) return;
@@ -100,6 +126,27 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     const pct = Math.round((completedCount / timeline.length) * 100);
     onProgressChange(pct);
   }, [checked, timeline, onProgressChange]);
+
+  // Check if timeline time period is complete (reached last item time)
+  useEffect(() => {
+    if (!onTimelineComplete || timeline.length === 0) return;
+    
+    if (isTimelineFrozen) {
+      onTimelineComplete(false); // Frozen timeline means not ready for check-in
+      return;
+    }
+    
+    const lastItemIndex = timeline.length - 1;
+    if (lastItemIndex < 0) {
+      onTimelineComplete(false);
+      return;
+    }
+    
+    const lastItemTime = toMinutes(timeline[lastItemIndex].time);
+    const isTimePastLastItem = currentTime >= lastItemTime;
+    
+    onTimelineComplete(isTimePastLastItem);
+  }, [currentTime, timeline, onTimelineComplete, isTimelineFrozen]);
 
   useEffect(() => {
     if (!onActiveFocusChange || timeline.length === 0 || isTimelineFrozen) return;

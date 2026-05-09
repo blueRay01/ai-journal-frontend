@@ -1,18 +1,45 @@
 // src/components/report/FocusCard.jsx
 import { useState, useEffect } from "react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../../config/firebase";
+import { useAuth } from "../../contexts/AuthContext";
+
+function getWeekKey() {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${week}`;
+}
 
 export default function FocusCard({ entries = [] }) {
+  const { user } = useAuth();
   const [intent, setIntent] = useState({ title: "", body: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!user || entries.length === 0) {
+      setLoading(false);
+      return;
+    }
+
     const fetchIntent = async () => {
-      if (entries.length === 0) {
-        setLoading(false);
-        return;
+      const weekKey = getWeekKey();
+      const intentRef = doc(db, "users", user.uid, "weeklyIntents", weekKey);
+
+      // Check Firestore cache first
+      try {
+        const cached = await getDoc(intentRef);
+        if (cached.exists()) {
+          setIntent(cached.data());
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("Failed to read cached intent:", err);
       }
 
+      // Not cached — fetch from API and save
       try {
         const response = await fetch("http://localhost:5000/api/generate-weekly-intent", {
           method: "POST",
@@ -20,28 +47,29 @@ export default function FocusCard({ entries = [] }) {
           body: JSON.stringify({ entries }),
         });
 
-        // Guard: non-2xx responses may return HTML, not JSON
         if (!response.ok) {
           const text = await response.text();
           throw new Error(`Server error ${response.status}: ${text.slice(0, 200)}`);
         }
 
         const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        // Guard: ensure the expected shape is present
+        if (data.error) throw new Error(data.error);
         if (!data.intent?.title || !data.intent?.body) {
           throw new Error("Unexpected response shape from server.");
         }
 
         setIntent(data.intent);
+
+        // Persist to Firestore under users/{uid}/weeklyIntents/{weekKey}
+        await setDoc(intentRef, {
+          title: data.intent.title,
+          body: data.intent.body,
+          generatedAt: new Date().toISOString(),
+          weekKey,
+        });
       } catch (err) {
         console.error("Error fetching weekly intent:", err);
         setError(err.message);
-        // Fallback to default content
         setIntent({
           title: "Mindful Mornings",
           body: "To stabilize the Thursday energy dips, focus on dedicating the first 15 minutes of your morning to tech-free breathing exercises before checking notifications.",
@@ -52,7 +80,7 @@ export default function FocusCard({ entries = [] }) {
     };
 
     fetchIntent();
-  }, [entries]);
+  }, [user, entries]);
 
   if (loading) {
     return (
@@ -84,10 +112,10 @@ export default function FocusCard({ entries = [] }) {
         Intent for Next Week
       </h3>
       <h2 className="text-[32px] font-semibold leading-snug text-on-surface mb-4">
-        {intent.title || "Loading..."}
+        {intent.title}
       </h2>
       <p className="font-normal text-[16px] text-outline leading-relaxed mb-6">
-        {intent.body || "Loading..."}
+        {intent.body}
       </p>
     </section>
   );

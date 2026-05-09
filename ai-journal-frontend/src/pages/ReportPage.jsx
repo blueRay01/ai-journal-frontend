@@ -65,27 +65,47 @@ export default function ReportPage() {
       return;
     }
 
-    // Calculate streak (consecutive days with entries)
+    // Calculate consecutive day streak (same logic as StreakCard)
     let streak = 0;
-    let maxStreak = 0;
     let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Start of today
 
-    entries.forEach((entry) => {
-      const entryDate = new Date(entry.createdAt);
-      entryDate.setHours(0, 0, 0, 0);
-      currentDate.setHours(0, 0, 0, 0);
-
-      const diffDays = Math.floor((currentDate - entryDate) / (1000 * 60 * 60 * 24));
-
-      if (diffDays === streak) {
-        streak++;
-        maxStreak = Math.max(maxStreak, streak);
-      } else if (diffDays > streak) {
-        streak = 0;
-      }
+    // Sort entries by date (newest first)
+    const sortedEntries = entries.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return dateB - dateA;
     });
 
-    setStreakData({ days: maxStreak, label: maxStreak > 0 ? "Consistent clarity" : "Start your journey" });
+    // Check if there's an entry for today
+    const todayEntry = sortedEntries.find(entry => {
+      const entryDate = entry.createdAt?.toDate?.() || new Date(entry.createdAt);
+      entryDate.setHours(0, 0, 0, 0);
+      return entryDate.getTime() === currentDate.getTime();
+    });
+
+    // If no entry for today, check yesterday
+    if (!todayEntry) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    // Count consecutive days backwards
+    while (true) {
+      const entryForDate = sortedEntries.find(entry => {
+        const entryDate = entry.createdAt?.toDate?.() || new Date(entry.createdAt);
+        entryDate.setHours(0, 0, 0, 0);
+        return entryDate.getTime() === currentDate.getTime();
+      });
+
+      if (entryForDate) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    setStreakData({ days: streak, label: streak > 0 ? "Consistent clarity" : "Start your journey" });
 
     // Find peak day (highest wellness score)
     let peakEntry = null;
@@ -169,8 +189,6 @@ export default function ReportPage() {
       <div className="aura-bottom-left" />
 
       <DashboardHeader />
-
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-primary-fixed/50 rounded-full blur-[140px] -z-10 pointer-events-none" />
 
       <main className="w-full max-w-2xl mx-auto px-6 pt-32 pb-24 flex flex-col gap-8 relative z-10">
         <header className="flex flex-col items-center text-center mb-4">

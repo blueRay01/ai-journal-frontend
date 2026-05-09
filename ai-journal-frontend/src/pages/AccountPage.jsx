@@ -1,4 +1,4 @@
-// src/pages/SettingsPage.jsx
+// src/pages/AccountPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardHeader from "../components/layout/DashboardHeader";
@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
-export default function SettingsPage() {
+export default function AccountPage() {
   const navigate = useNavigate();
   const { user, changePassword } = useAuth();
   const [nickname, setNickname] = useState("");
@@ -114,7 +114,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-gradient-to-b from-f5f5f0 to-e8e8e0 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-c8c8c0 border-t-5a7a5a rounded-full animate-spin" />
-          <p className="mt-4 text-888880">Loading settings...</p>
+          <p className="mt-4 text-888880">Loading account...</p>
         </div>
       </div>
     );
@@ -127,7 +127,7 @@ export default function SettingsPage() {
         
         <main className="max-w-4xl mx-auto px-4 md:px-8 pt-[100px]">
           <div className="mb-8">
-            <h1 className="text-4xl font-light text-primary mb-2">Settings</h1>
+            <h1 className="text-4xl font-light text-primary mb-2">Account</h1>
             <p className="text-body-lg text-on-surface-variant">Manage your account preferences</p>
           </div>
 
@@ -229,7 +229,7 @@ export default function SettingsPage() {
           </div>
         </main>
 
-        <BottomNav activePage="settings" onNavigate={navigate} />
+        <BottomNav activePage="account" onNavigate={navigate} />
       </div>
     </>
   );

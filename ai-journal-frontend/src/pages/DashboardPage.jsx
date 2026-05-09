@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [showTomorrowPlanToday, setShowTomorrowPlanToday] = useState(false);
   const [isFirstDay, setIsFirstDay] = useState(true);
   const [streakBroken, setStreakBroken] = useState(false);
+  const [isTimelineComplete, setIsTimelineComplete] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -109,6 +110,12 @@ export default function DashboardPage() {
       console.error("Error checking tomorrow plan display:", error);
     }
   };
+
+  const handleTimelineComplete = (isComplete) => {
+    setIsTimelineComplete(isComplete);
+    // Store in localStorage so CheckInPage can access it
+    localStorage.setItem('timelineComplete', isComplete.toString());
+  };
   
   useEffect(() => {
     const updateGreeting = () => {
@@ -159,16 +166,25 @@ export default function DashboardPage() {
             </div>
             <ResonanceTrackerCard goalPct={resonancePct}/>
             <button
-              onClick={() => navigate("/checkin")}
-              className="w-full bg-[#2f4a35] text-white text-sm font-medium py-4 rounded-xl hover:bg-[#253d2a] transition-all shadow-[0_4px_20px_rgba(47,74,53,0.25)] flex items-center justify-center gap-2"
+              onClick={() => {
+                navigate("/checkin");
+              }}
+              disabled={!isTimelineComplete}
+              className={`w-full text-sm font-medium py-4 rounded-xl transition-all shadow-[0_4px_20px_rgba(47,74,53,0.25)] flex items-center justify-center gap-2 ${
+                isTimelineComplete 
+                  ? "bg-[#2f4a35] text-white hover:bg-[#253d2a]" 
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
             >
-              <span className="material-symbols-outlined text-lg">add</span>
+              <span className="material-symbols-outlined text-lg">
+                {isTimelineComplete ? "add" : "block"}
+              </span>
               Check in today
             </button>
           </div>
 
           <div className="md:col-span-5">
-            <TimelineProgressionCard timeline={timeline} entryDate={entryDate} onProgressChange={setResonancePct} onActiveFocusChange={setActiveFocus} showTomorrowPlanToday={showTomorrowPlanToday} isFirstDay={isFirstDay} streakBroken={streakBroken}/>
+            <TimelineProgressionCard timeline={timeline} entryDate={entryDate} onProgressChange={setResonancePct} onActiveFocusChange={setActiveFocus} onTimelineComplete={handleTimelineComplete} showTomorrowPlanToday={showTomorrowPlanToday} isFirstDay={isFirstDay} streakBroken={streakBroken}/>
           </div>
         </div>
       </main>

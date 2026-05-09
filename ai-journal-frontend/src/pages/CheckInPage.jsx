@@ -218,6 +218,7 @@ export default function CheckInPage() {
   const [todayActivities, setTodayActivities] = useState([]);
   const [completedActivities, setCompletedActivities] = useState([]);
   const [activitiesExhausted, setActivitiesExhausted] = useState(true);
+  const [timelineComplete, setTimelineComplete] = useState(false);
 
   useEffect(() => {
     const fetchInternetDateAndCheckStatus = async () => {
@@ -230,6 +231,10 @@ export default function CheckInPage() {
       } catch (error) {
         console.log('Failed to fetch internet date, using local date:', error);
       }
+
+      // Check timeline completion status from localStorage
+      const timelineStatus = localStorage.getItem('timelineComplete');
+      setTimelineComplete(timelineStatus === 'true');
 
       if (user) {
         await checkTodayEntry();
@@ -340,9 +345,9 @@ export default function CheckInPage() {
     e.preventDefault();
     if (!user || hasCheckedInToday) return;
     
-    // Check if activities are exhausted
-    if (!activitiesExhausted && completedActivities.length < todayActivities.length) {
-      return; // Prevent check-in if activities not completed
+    // Check if timeline is complete
+    if (!timelineComplete) {
+      return; // Prevent check-in if timeline is not complete
     }
 
     try {
@@ -475,8 +480,8 @@ export default function CheckInPage() {
             <p className="font-body-lg text-body-lg text-on-surface-variant">
               {hasCheckedInToday
                 ? "You've already checked in today. Come back tomorrow!"
-                : !activitiesExhausted && todayActivities.length > 0
-                  ? `Complete your ${todayActivities.length - completedActivities.length} remaining activities first.`
+                : !timelineComplete
+                  ? "Complete your timeline activities first before checking in."
                   : "Take a moment to reflect on your day."
               }
             </p>
@@ -720,26 +725,26 @@ export default function CheckInPage() {
                       !Object.values(sleepQuality).some(v => v) ||
                       !Object.values(mood).some(v => v) ||
                       !Object.values(stressLevel).some(v => v) ||
-                      (!activitiesExhausted && completedActivities.length < todayActivities.length)
+                      !timelineComplete
                     }
                     className={`font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
                       !isSubmitting && winsText.trim() &&
                       Object.values(sleepQuality).some(v => v) &&
                       Object.values(mood).some(v => v) &&
                       Object.values(stressLevel).some(v => v) &&
-                      (activitiesExhausted || completedActivities.length === todayActivities.length)
+                      timelineComplete
                         ? "bg-primary text-on-primary hover:bg-primary-fixed-variant shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
                     {isSubmitting ? "Saving…" : 
-                      !activitiesExhausted && completedActivities.length < todayActivities.length
-                        ? "Complete Activities First"
+                      !timelineComplete
+                        ? "Complete Timeline First"
                         : "Submit Entry"
                     }
                     <span className="material-symbols-outlined text-[18px]">
                       {isSubmitting ? "hourglass_empty" : 
-                        !activitiesExhausted && completedActivities.length < todayActivities.length
+                        !timelineComplete
                           ? "block"
                           : "arrow_forward"
                       }

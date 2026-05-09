@@ -118,7 +118,7 @@ export default function StreakCard() {
     return streak;
   };
 
-  // Reset colors after 7-day streak
+  // Reset visual indicators after 7-day streak
   const shouldReset = currentStreak >= 7;
   
   if (loading) {
@@ -145,15 +145,15 @@ export default function StreakCard() {
       {/* Label */}
       <span className="text-xs text-[#888880] tracking-wide">Day Streak</span>
 
-      {/* Dash row */}
+      {/* Dash row - visual reset after 7 days */}
       <div className="flex gap-1 mt-1">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={`w-5 h-[3px] rounded-full ${i < currentStreak && !shouldReset ? "bg-[#5a7a5a]" : "bg-[#c8c8c0]"}`} />
+          <div key={i} className={`w-5 h-[3px] rounded-full ${i < (currentStreak % 7) ? "bg-[#5a7a5a]" : "bg-[#c8c8c0]"}`} />
         ))}
       </div>
       <div className="flex gap-1 mt-1">
         {[4, 5, 6].map((i) => (
-          <div key={i} className={`w-5 h-[3px] rounded-full ${i < currentStreak && !shouldReset ? "bg-[#5a7a5a]" : "bg-[#c8c8c0]"}`} />
+          <div key={i} className={`w-5 h-[3px] rounded-full ${i < (currentStreak % 7) ? "bg-[#5a7a5a]" : "bg-[#c8c8c0]"}`} />
         ))}
       </div>
     </div>
