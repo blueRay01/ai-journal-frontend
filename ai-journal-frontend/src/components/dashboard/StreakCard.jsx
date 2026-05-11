@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { collection, query, where, orderBy, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { getRecordingDate } from "../../utils/testDateTime";
 
 export default function StreakCard() {
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -51,30 +50,14 @@ export default function StreakCard() {
     
     // Set up periodic refresh (every 5 minutes)
     const interval = setInterval(() => {
-      const today = getRecordingDate().toDateString(); // Use test date/time system
+      const today = new Date().toDateString();
       if (lastUpdateDate !== today) {
         fetchStreak();
       }
     }, 5 * 60 * 1000); // 5 minutes
-    
+
     return () => clearInterval(interval);
   }, [user, lastUpdateDate]);
-  
-  // Listen for test streak refresh events
-  useEffect(() => {
-    if (!user) return;
-    
-    const handleTestStreakRefresh = () => {
-      console.log('Refreshing streak due to test date/time change');
-      fetchStreak();
-    };
-    
-    window.addEventListener('testStreakRefresh', handleTestStreakRefresh);
-    
-    return () => {
-      window.removeEventListener('testStreakRefresh', handleTestStreakRefresh);
-    };
-  }, [user]);
 
   // Listen for custom refresh event
   useEffect(() => {

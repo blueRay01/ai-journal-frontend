@@ -55,15 +55,4 @@ if (typeof window !== 'undefined') {
   window.addEventListener('testModeExited', () => {
     disableTestDateTime();
   });
-  
-  // Listen for refreshStreak events and update all streak components
-  window.addEventListener('refreshStreak', () => {
-    // Force refresh of all streak components when test date/time changes
-    console.log('Refreshing streak components due to test date/time change');
-    
-    // Dispatch custom event to notify all components
-    window.dispatchEvent(new CustomEvent('testStreakRefresh', {
-      detail: { timestamp: Date.now() }
-    }));
-  });
 }
