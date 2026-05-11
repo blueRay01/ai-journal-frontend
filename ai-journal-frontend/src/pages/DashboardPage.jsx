@@ -119,7 +119,18 @@ export default function DashboardPage() {
   
   useEffect(() => {
     const updateGreeting = () => {
-      const hour = new Date().getHours();
+      // Check if we're in testing mode
+      const testMode = localStorage.getItem('testMode');
+      const testDateTime = localStorage.getItem('testDateTime');
+      
+      let currentDate;
+      if (testMode === 'true' && testDateTime) {
+        currentDate = new Date(testDateTime);
+      } else {
+        currentDate = new Date();
+      }
+      
+      const hour = currentDate.getHours();
       if (hour < 12) {
         setGreeting("Good Morning");
       } else if (hour < 17) {
@@ -132,7 +143,19 @@ export default function DashboardPage() {
     updateGreeting();
     const interval = setInterval(updateGreeting, 60000); // Update every minute
     
-    return () => clearInterval(interval);
+    // Listen for test date/time changes
+    const handleTestDateTimeChange = () => {
+      updateGreeting();
+    };
+    
+    window.addEventListener('testDateTimeChanged', handleTestDateTimeChange);
+    window.addEventListener('testModeExited', handleTestDateTimeChange);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('testDateTimeChanged', handleTestDateTimeChange);
+      window.removeEventListener('testModeExited', handleTestDateTimeChange);
+    };
   }, []);
 
   return (

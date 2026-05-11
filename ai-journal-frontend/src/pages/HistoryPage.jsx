@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import BottomNav from "../components/layout/BottomNav";
 import EntryRow from "../components/dashboard/EntryRow";
 import DashboardHeader from "../components/layout/DashboardHeader";
+import { getRecordingDate } from "../utils/testDateTime";
 
 const PAGE_SIZE = 4;
 const FILTERS = ["All Time", "Past 7 Days", "Past Month", "Past 3 Months"];
@@ -25,7 +26,7 @@ function calculateWellnessScore(mood, sleep, stress, exercise) {
 
 function formatTimestamp(date) {
   if (!date) return "";
-  const now = new Date();
+  const now = getRecordingDate(); // Use targeted date/time system
   const today = new Date(now); today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
   const entryDay = new Date(date); entryDay.setHours(0, 0, 0, 0);

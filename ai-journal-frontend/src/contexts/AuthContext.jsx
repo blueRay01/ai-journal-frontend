@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Firebase automatically checks for existing sessions
   useEffect(() => {
@@ -55,13 +56,34 @@ export function AuthProvider({ children }) {
     return updatePassword(user, newPassword);
   };
 
+  const adminLogin = () => {
+    const adminUser = {
+      uid: 'admin',
+      email: 'admin@test.com',
+      displayName: 'Admin User'
+    };
+    setUser(adminUser);
+    setIsAuthenticated(true);
+    setIsAdmin(true);
+    setLoading(false);
+  };
+
+  const adminLogout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+    setIsAdmin(false);
+  };
+
   const value = {
     isAuthenticated,
     user,
+    isAdmin,
     login,
     signup, 
     logout,
     changePassword,
+    adminLogin,
+    adminLogout,
   };
 
   return (

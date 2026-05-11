@@ -4,7 +4,14 @@ import BottomNav from "../components/layout/BottomNav";
 import { useState, useEffect } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
 import { useAuth } from "../contexts/AuthContext";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, orderBy } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, orderBy, Timestamp } from "firebase/firestore";
+import { getRecordingDate } from "../utils/testDateTime";
+
+// Custom serverTimestamp that uses test date/time when in test mode
+const customServerTimestamp = () => {
+  const recordingDate = getRecordingDate();
+  return Timestamp.fromDate(recordingDate); // Convert to proper Firebase Timestamp
+};
 import { db } from "../config/firebase";
 
 const CHECKIN_STORAGE_KEY = "ai_journal_latest_checkin";
@@ -222,14 +229,25 @@ export default function CheckInPage() {
 
   useEffect(() => {
     const fetchInternetDateAndCheckStatus = async () => {
-      try {
-        const response = await fetch('https://worldtimeapi.org/api/ip');
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentDate(new Date(data.datetime));
+      // Check if we're in testing mode first
+      const testMode = localStorage.getItem('testMode');
+      
+      if (testMode === 'true') {
+        // Use test date/time from testing dashboard for recording
+        setCurrentDate(getRecordingDate());
+        console.log('Using test date/time for recording:', getRecordingDate());
+      } else {
+        // Normal operation: fetch internet date
+        try {
+          const response = await fetch('https://worldtimeapi.org/api/ip');
+          if (response.ok) {
+            const data = await response.json();
+            setCurrentDate(new Date(data.datetime));
+          }
+        } catch (error) {
+          console.log('Failed to fetch internet date, using local date:', error);
+          setCurrentDate(new Date());
         }
-      } catch (error) {
-        console.log('Failed to fetch internet date, using local date:', error);
       }
 
       // Check timeline completion status from localStorage
@@ -349,6 +367,12 @@ export default function CheckInPage() {
     if (!timelineComplete) {
       return; // Prevent check-in if timeline is not complete
     }
+    
+    // Additional check: prevent multiple check-ins on same day
+    if (hasCheckedInToday) {
+      alert('You have already checked in today. Check-in is only allowed once per day.');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -375,7 +399,7 @@ export default function CheckInPage() {
         date: currentDate.toLocaleDateString('en-US', {
           year: 'numeric', month: 'long', day: 'numeric',
         }),
-        createdAt: serverTimestamp(),
+        createdAt: customServerTimestamp(),
       };
 
       // 1. Save entry to Firestore

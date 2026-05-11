@@ -10,7 +10,17 @@ function toMinutes(timeStr) {
 }
 
 function nowMinutes() {
-  const now = new Date();
+  // Check if we're in testing mode
+  const testMode = localStorage.getItem('testMode');
+  const testDateTime = localStorage.getItem('testDateTime');
+  
+  let now;
+  if (testMode === 'true' && testDateTime) {
+    now = new Date(testDateTime);
+  } else {
+    now = new Date();
+  }
+  
   return now.getHours() * 60 + now.getMinutes();
 }
 
@@ -87,7 +97,17 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
   useEffect(() => {
   const sync = () => {
     setCurrentTime(nowMinutes());
-    const d = new Date();
+    
+    // Check if we're in testing mode for today's date
+    const testMode = localStorage.getItem('testMode');
+    const testDateTime = localStorage.getItem('testDateTime');
+    
+    let d;
+    if (testMode === 'true' && testDateTime) {
+      d = new Date(testDateTime);
+    } else {
+      d = new Date();
+    }
     d.setHours(0, 0, 0, 0);
     setToday(d.getTime());
   };
@@ -98,10 +118,20 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     if (document.visibilityState === "visible") sync();
   });
 
+  // Listen for test date/time changes
+  const handleTestDateTimeChange = () => {
+    sync();
+  };
+  
+  window.addEventListener('testDateTimeChanged', handleTestDateTimeChange);
+  window.addEventListener('testModeExited', handleTestDateTimeChange);
+
   return () => {
     clearInterval(interval);
     window.removeEventListener("focus", sync);
     document.removeEventListener("visibilitychange", sync);
+    window.removeEventListener('testDateTimeChanged', handleTestDateTimeChange);
+    window.removeEventListener('testModeExited', handleTestDateTimeChange);
   };
 }, []);
 
@@ -136,6 +166,10 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
       return;
     }
     
+    // Check if timeline is manually marked as complete in test mode
+    const testMode = localStorage.getItem('testMode');
+    const testTimelineComplete = localStorage.getItem('timelineComplete');
+    
     const lastItemIndex = timeline.length - 1;
     if (lastItemIndex < 0) {
       onTimelineComplete(false);
@@ -145,7 +179,12 @@ export default function TimelineProgressionCard({ timeline = [], entryDate = nul
     const lastItemTime = toMinutes(timeline[lastItemIndex].time);
     const isTimePastLastItem = currentTime >= lastItemTime;
     
-    onTimelineComplete(isTimePastLastItem);
+    // Use manual timeline completion if in test mode, otherwise use time-based logic
+    const shouldComplete = testMode === 'true' 
+      ? testTimelineComplete === 'true' 
+      : isTimePastLastItem;
+    
+    onTimelineComplete(shouldComplete);
   }, [currentTime, timeline, onTimelineComplete, isTimelineFrozen]);
 
   useEffect(() => {

@@ -13,8 +13,11 @@ import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 import AIInsightPage from "./pages/AIInsightPage";
 import AccountPage from "./pages/AccountPage";
+import TestingDashboard from "./pages/TestingDashboard";
+import AdminLogin from "./pages/AdminLogin";
 import { useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
+import { initializeTestMode } from "./utils/testDateTime";
 
 function LandingPage() {
   return (
@@ -55,12 +58,18 @@ function LandingPageWrapper({ children }) {
 }
 
 export default function App() {
+  // Initialize test date/time system when app starts
+  useEffect(() => {
+    initializeTestMode();
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route
             path="/dashboard"
             element={
@@ -106,6 +115,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/testing"
+            element={
+              <ProtectedRoute>
+                <TestingDashboard />
               </ProtectedRoute>
             }
           />

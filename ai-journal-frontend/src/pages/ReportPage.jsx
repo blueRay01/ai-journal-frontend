@@ -11,10 +11,11 @@ import PeakResonanceCard from "../components/report/PeakResonanceCard";
 import HighFrictionCard from "../components/report/HighFrictionCard";
 import CorrelationCard from "../components/report/CorrelationCard";
 import FocusCard from "../components/report/FocusCard";
+import { getRecordingDate } from "../utils/testDateTime";
 
 // Returns the Monday of the current week at 00:00:00
 function getStartOfWeek() {
-  const now = new Date();
+  const now = getRecordingDate(); // Use targeted date/time system
   const day = now.getDay(); // 0 = Sun
   const diff = (day === 0 ? -6 : 1) - day; // shift so Mon = start
   const monday = new Date(now);
@@ -91,7 +92,7 @@ export default function ReportPage() {
 
     // ── Streak ──────────────────────────────────────────────────────────────
     let streak = 0;
-    let currentDate = new Date();
+    let currentDate = getRecordingDate(); // Use test date/time system
     currentDate.setHours(0, 0, 0, 0);
 
     const sortedEntries = [...entries].sort((a, b) => {
