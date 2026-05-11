@@ -23,7 +23,7 @@ function StatPill({ label, value }) {
   );
 }
 
-export default function EntryRow({ id, emoji, timestamp, score, preview, mood, sleepQuality, stressLevel, onClick }) {
+export default function EntryRow({ id, emoji, timestamp, score, preview, mood, sleepQuality, stressLevel, reflection, onClick }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [insightText, setInsightText] = useState(null);
   const [insightLoading, setInsightLoading] = useState(false);
@@ -106,6 +106,21 @@ export default function EntryRow({ id, emoji, timestamp, score, preview, mood, s
             <StatPill label="Sleep"  value={SLEEP_LABELS[sleepQuality]  ?? sleepQuality} />
             <StatPill label="Stress" value={STRESS_LABELS[stressLevel]  ?? stressLevel} />
           </div>
+
+          {/* User Reflection */}
+          {reflection && (
+            <div className="flex gap-2.5">
+              <span className="material-symbols-outlined text-[16px] text-primary/60 shrink-0 mt-0.5">
+                edit_note
+              </span>
+              <div className="flex-1">
+                <h4 className="text-[12px] font-semibold text-primary mb-1">Your Reflection</h4>
+                <p className="text-[13px] text-on-surface-variant leading-relaxed">
+                  {reflection}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* AI Insight */}
           {insightLoading && (

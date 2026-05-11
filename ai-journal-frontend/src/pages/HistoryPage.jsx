@@ -88,6 +88,7 @@ export default function HistoryPage() {
             rawDate:      date,
             score,
             preview:      data.summaryPreview || data.reflection || "No summary available.",
+            reflection:    data.reflection || null,
             mood:         data.mood         || null,
             sleepQuality: data.sleepQuality || null,
             stressLevel:  data.stressLevel  || null,
