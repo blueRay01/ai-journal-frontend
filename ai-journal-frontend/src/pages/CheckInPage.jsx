@@ -1,10 +1,28 @@
 // src/pages/CheckInPage.jsx
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/layout/BottomNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardHeader from "../components/layout/DashboardHeader";
+import { useAuth } from "../contexts/AuthContext";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, orderBy } from "firebase/firestore";
+import { db } from "../config/firebase";
 
-// Add styles
+const CHECKIN_STORAGE_KEY = "ai_journal_latest_checkin";
+
+// ── Wellness score calculation ─────────────────────────────────────────────
+const MOOD_SCORES   = { sad: 2, anxious: 4, neutral: 5, positive: 7, happy: 9 };
+const SLEEP_SCORES  = { restless: 2, poor: 4, neutral: 5, good: 7, excellent: 9 };
+const STRESS_SCORES = { overwhelmed: 1, tense: 3, neutral: 5, moderate: 7, calm: 9 };
+
+function calculateWellnessScore(mood, sleep, stress, exercise) {
+  const moodScore    = MOOD_SCORES[mood]    ?? 5;
+  const sleepScore   = SLEEP_SCORES[sleep]  ?? 5;
+  const stressScore  = STRESS_SCORES[stress] ?? 5;
+  const exerciseBonus = exercise ? 0.5 : 0;
+  return Math.min(Math.round((moodScore + sleepScore + stressScore) / 3 + exerciseBonus), 10);
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
 
@@ -15,17 +33,9 @@ const styles = `
   }
 
   @keyframes handwritten-check {
-    0% {
-      stroke-dasharray: 0 100;
-      opacity: 0;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      stroke-dasharray: 100 0;
-      opacity: 1;
-    }
+    0% { stroke-dasharray: 0 100; opacity: 0; }
+    50% { opacity: 1; }
+    100% { stroke-dasharray: 100 0; opacity: 1; }
   }
 
   .animate-handwritten-check path:first-child {
@@ -36,21 +46,16 @@ const styles = `
     animation: handwritten-check 0.3s ease-in-out 0.1s both;
   }
 
-  .exercise-checkbox:checked + label {
-    background-color: rgba(39, 68, 47, 0.1);
-    border-color: #27442f;
-  }
-
   .aura-tl {
     position: fixed;
     top: -10%;
     left: -10%;
     width: 50vw;
     height: 50vw;
-    background: radial-gradient(circle, rgba(173,207,178,0.3) 0%, rgba(250,243,225,0) 70%);
+    background: radial-gradient(circle, rgba(173,207,178,0.3) 0%, rgba(238,244,232,0) 70%);
     border-radius: 50%;
     filter: blur(60px);
-    z-index: -1;
+    z-index: 0;
     pointer-events: none;
   }
 
@@ -60,10 +65,10 @@ const styles = `
     right: -10%;
     width: 60vw;
     height: 60vw;
-    background: radial-gradient(circle, rgba(204,190,250,0.2) 0%, rgba(250,243,225,0) 70%);
+    background: radial-gradient(circle, rgba(204,190,250,0.15) 0%, rgba(245,245,239,0) 70%);
     border-radius: 50%;
     filter: blur(80px);
-    z-index: -1;
+    z-index: 0;
     pointer-events: none;
   }
 
@@ -77,7 +82,7 @@ const styles = `
     z-index: -1;
     border: 1px solid rgba(0,0,0,0.03);
   }
-  
+
   .book-page-under-2 {
     position: absolute;
     inset: 0;
@@ -88,7 +93,7 @@ const styles = `
     z-index: -2;
     border: 1px solid rgba(0,0,0,0.03);
   }
-  
+
   .book-page-under-3 {
     position: absolute;
     inset: 0;
@@ -186,255 +191,573 @@ const styles = `
   .toggle-checkbox:checked + .toggle-label::after {
     transform: translateX(24px);
   }
-
-  body {
-    background-color: #FAF3E1;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
-    min-height: 100vh;
-  }
 `;
 
-export default function CheckInPage() {
-    const navigate = useNavigate();
-    const [exerciseChecked, setExerciseChecked] = useState(false);
-    const [sleepQuality, setSleepQuality] = useState(4);
-    const [mood, setMood] = useState(3);
-    const [stressLevel, setStressLevel] = useState(2);
-    const [winsText, setWinsText] = useState("");
+function CheckmarkSVG({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-handwritten-check">
+      <path d="M5 12L9 16" stroke="#27442f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="100" strokeDashoffset="0" />
+      <path d="M8.5 16L19 5" stroke="#27442f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="100" strokeDashoffset="0" />
+    </svg>
+  );
+}
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Handle form submission
-        console.log('Check-in submitted:', {
-            exerciseChecked,
-            sleepQuality,
-            mood,
-            stressLevel,
-            winsText
-        });
-        // Navigate to insights after submission
-        navigate('/insights');
+export default function CheckInPage() {
+  const navigate = useNavigate();
+  const [exerciseChecked, setExerciseChecked] = useState(false);
+  const [sleepQuality, setSleepQuality] = useState({ restless: false, poor: false, neutral: false, good: false, excellent: false });
+  const [mood, setMood] = useState({ sad: false, anxious: false, neutral: false, positive: false, happy: false });
+  const [stressLevel, setStressLevel] = useState({ calm: false, tense: false, neutral: false, moderate: false, overwhelmed: false });
+  const [winsText, setWinsText] = useState("");
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [todayEntry, setTodayEntry] = useState(null);
+  const [todayActivities, setTodayActivities] = useState([]);
+  const [completedActivities, setCompletedActivities] = useState([]);
+  const [activitiesExhausted, setActivitiesExhausted] = useState(true);
+  const [timelineComplete, setTimelineComplete] = useState(false);
+
+  useEffect(() => {
+    const fetchInternetDateAndCheckStatus = async () => {
+      try {
+        const response = await fetch('https://worldtimeapi.org/api/ip');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentDate(new Date(data.datetime));
+        }
+      } catch (error) {
+        console.log('Failed to fetch internet date, using local date:', error);
+      }
+
+      // Check timeline completion status from localStorage
+      const timelineStatus = localStorage.getItem('timelineComplete');
+      setTimelineComplete(timelineStatus === 'true');
+
+      if (user) {
+        await checkTodayEntry();
+      } else {
+        setLoading(false);
+      }
     };
+
+    fetchInternetDateAndCheckStatus();
+  }, [user]);
+
+  const checkTodayEntry = async () => {
+    if (!user) return;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const entriesRef = collection(db, "journalEntries");
+      const q = query(
+        entriesRef,
+        where("userId", "==", user.uid),
+        where("createdAt", ">=", today),
+        where("createdAt", "<", tomorrow)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const hasEntry = !querySnapshot.empty;
+      setHasCheckedInToday(hasEntry);
+      
+      if (hasEntry) {
+        const entryDoc = querySnapshot.docs[0];
+        const entryData = entryDoc.data();
+        setTodayEntry(entryData);
+        
+        // Set form values from today's entry
+        setExerciseChecked(entryData.exercise || false);
+        setSleepQuality(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.sleepQuality])));
+        setMood(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.mood])));
+        setStressLevel(prev => Object.fromEntries(Object.keys(prev).map(k => [k, k === entryData.stressLevel])));
+        setWinsText(entryData.reflection || "");
+      } else {
+        // No entry today, check for yesterday's activities
+        await loadYesterdayActivities();
+      }
+    } catch (error) {
+      console.error("Error checking today's entry:", error);
+      setHasCheckedInToday(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadYesterdayActivities = async () => {
+    if (!user) return;
+    
+    try {
+      // Get yesterday's entry to find today's activities
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      
+      const endOfYesterday = new Date(yesterday);
+      endOfYesterday.setHours(23, 59, 59, 999);
+      
+      const entriesRef = collection(db, "journalEntries");
+      const q = query(
+        entriesRef,
+        where("userId", "==", user.uid),
+        where("createdAt", ">=", yesterday),
+        where("createdAt", "<=", endOfYesterday),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const yesterdayEntry = querySnapshot.docs[0].data();
+        const activities = yesterdayEntry.tomorrowTimeline || [];
+        setTodayActivities(activities);
+        setCompletedActivities([]); // Start fresh today
+        setActivitiesExhausted(activities.length === 0); // If no activities, allow check-in
+      } else {
+        setActivitiesExhausted(true); // No previous entry, allow check-in
+      }
+    } catch (error) {
+      console.error("Error loading yesterday's activities:", error);
+      setActivitiesExhausted(true); // On error, allow check-in
+    }
+  };
+
+  const toggleActivityCompletion = (activityIndex) => {
+    setCompletedActivities(prev => {
+      if (prev.includes(activityIndex)) {
+        return prev.filter(index => index !== activityIndex);
+      } else {
+        return [...prev, activityIndex];
+      }
+    });
+  };
+
+  const selectSingle = (setter, key) => setter(prev =>
+    Object.fromEntries(Object.keys(prev).map(k => [k, k === key ? !prev[k] : false]))
+  );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user || hasCheckedInToday) return;
+    
+    // Check if timeline is complete
+    if (!timelineComplete) {
+      return; // Prevent check-in if timeline is not complete
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const selectedSleepQuality = Object.keys(sleepQuality).find(key => sleepQuality[key]);
+      const selectedMood         = Object.keys(mood).find(key => mood[key]);
+      const selectedStressLevel  = Object.keys(stressLevel).find(key => stressLevel[key]);
+
+      const moodVal   = selectedMood          || "neutral";
+      const sleepVal  = selectedSleepQuality  || "neutral";
+      const stressVal = selectedStressLevel   || "neutral";
+
+      // ── Calculate score from selections ───────────────────────────────────
+      const score = calculateWellnessScore(moodVal, sleepVal, stressVal, exerciseChecked);
+      // ──────────────────────────────────────────────────────────────────────
+
+      const journalEntry = {
+        userId: user.uid,
+        exercise: exerciseChecked,
+        sleepQuality: sleepVal,
+        mood: moodVal,
+        stressLevel: stressVal,
+        reflection: winsText.trim(),
+        date: currentDate.toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric',
+        }),
+        createdAt: serverTimestamp(),
+      };
+
+      // 1. Save entry to Firestore
+      const docRef = await addDoc(collection(db, "journalEntries"), journalEntry);
+      console.log("Journal entry saved:", docRef.id);
+
+      // 2. Save to localStorage
+      const localEntry = {
+        exercise: exerciseChecked,
+        sleepQuality: sleepVal,
+        mood: moodVal,
+        stressLevel: stressVal,
+        reflection: winsText.trim(),
+        timestamp: new Date().toISOString(),
+        firestoreId: docRef.id,
+      };
+      localStorage.setItem(CHECKIN_STORAGE_KEY, JSON.stringify(localEntry));
+
+      // 3. Navigate immediately — insight page shows "generating..." state
+      setHasCheckedInToday(true);
+      window.dispatchEvent(new CustomEvent("refreshStreak"));
+      navigate("/insights", { state: { entryId: docRef.id } });
+
+      // 4. Call Express server for AI insight
+      const aiRes = await fetch("http://localhost:5000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exercise: exerciseChecked,
+          sleepQuality: sleepVal,
+          mood: moodVal,
+          stressLevel: stressVal,
+          reflection: winsText.trim(),
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const errData = await aiRes.json();
+        console.error("Server error:", errData.error);
+        throw new Error(errData.error);
+      }
+
+      const aiData = await aiRes.json();
+
+      // 5. Update Firestore with AI results + calculated score
+      await updateDoc(doc(db, "journalEntries", docRef.id), {
+        aiInsight:        aiData.insight,
+        insightType:      aiData.insight.type,
+        tomorrowTimeline: aiData.timeline,
+        summaryEmoji:     aiData.summary.emoji,
+        summaryScore:     score,               // ← from calculateWellnessScore, not AI
+        summaryPreview:   aiData.summary.preview,
+      });
+
+      console.log("AI insight saved to Firestore");
+
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const sectionCard = "p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-white/40";
+  const checkboxBase = "w-5 h-5 border-2 border-[#27442f] rounded flex items-center justify-center transition-all duration-300 bg-white/50 backdrop-blur-sm";
+
+  if (loading) {
+    return (
+      <>
+        <style>{styles}</style>
+        <div
+          className="text-on-surface font-body-md relative overflow-x-clip pb-40 min-h-screen flex items-center justify-center"
+          style={{ background: 'linear-gradient(to bottom, #f5f5f0, #e8e8e0)' }}
+        >
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-[#c8c8c0] border-t-[#5a7a5a] rounded-full animate-spin" />
+            <p className="mt-4 text-[#888880]">Loading check-in status...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      
       <style>{styles}</style>
-      <div className="text-on-surface font-body-md relative overflow-x-clip pb-40">
+      <div
+        className="text-on-surface font-body-md relative overflow-x-clip pb-40 min-h-screen"
+        style={{ background: 'linear-gradient(to bottom, #f5f5f0, #e8e8e0)' }}
+      >
+        <div className="aura-tl" />
+        <div className="aura-br" />
 
-      {/* Atmospheric Auras */}
-      <div className="aura-tl"></div>
-      <div className="aura-br"></div>
-      <DashboardHeader />
+        <DashboardHeader />
 
-      <main className="max-w-[1000px] mx-auto px-4 md:px-8 mt-4 md:mt-12">
+        <main className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-[60px]">
 
-        {/* Header */}
-        <div className="mb-16 text-center drop-shadow-md">
-          <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">Daily Check-in</h1>
-          <p className="font-body-lg text-body-lg text-on-surface-variant">Take a moment to reflect on your day.</p>
-          <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-secondary-fixed/50 text-on-secondary-container font-label-sm text-label-sm border border-secondary-fixed-dim/30 shadow-sm">
-            <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
-            October 24, 2023
+          <div className="mb-16 mt-12 md:mt-20 text-center drop-shadow-md">
+            <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary mb-2">
+              Daily Check-in
+            </h1>
+            <p className="font-body-lg text-body-lg text-on-surface-variant">
+              {hasCheckedInToday
+                ? "You've already checked in today. Come back tomorrow!"
+                : !timelineComplete
+                  ? "Complete your timeline activities first before checking in."
+                  : "Take a moment to reflect on your day."
+              }
+            </p>
+            {hasCheckedInToday && (
+              <div className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 border border-green-300">
+                <span className="material-symbols-outlined text-[20px] mr-2">check_circle</span>
+                <span className="font-medium">Today's check-in complete</span>
+              </div>
+            )}
+            <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-white/40 backdrop-blur-sm text-on-surface-variant font-label-sm text-label-sm border border-white/60 shadow-sm">
+              <span className="material-symbols-outlined text-[16px] mr-2">calendar_today</span>
+              {currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
           </div>
-        </div>
 
-        {/* Open Journal Book Frame */}
-        <div className="relative w-full max-w-4xl mx-auto z-10">
-          {/* Book Pages Underneath */}
-          <div className="book-page-under-3"></div>
-          <div className="book-page-under-2"></div>
-          <div className="book-page-under-1"></div>
-          {/* Book binding aesthetic line */}
-          <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-outline-variant/10 via-outline-variant/40 to-outline-variant/10 hidden md:block z-20 shadow-inner"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
-
-            {/* Left Page */}
-            <div className="rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]" style={{ 
-              background: 'rgba(253, 250, 246, 0.75)', 
-              border: '1px solid rgba(255, 255, 255, 0.9)', 
-              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)'
-            }}>
-              <div className="space-y-10">
-                {/* Exercise Section */}
-                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-6">
-                  <div>
-                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-                      <span className="material-symbols-outlined">fitness_center</span> Exercise
-                    </h3>
-                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Did you move your body today?</p>
-                  </div>
-                  <div className="relative">
-                    <input 
-                      type="checkbox"
-                      id="exercise-checkbox"
-                      className="exercise-checkbox sr-only"
-                      checked={exerciseChecked}
-                      onChange={(e) => setExerciseChecked(e.target.checked)}
-                    />
-                    <label
-                      htmlFor="exercise-checkbox"
-                      className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/70"
-                    >
-                      {exerciseChecked && (
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className="text-primary animate-handwritten-check"
-                        >
-                          {/* First stroke of the checkmark */}
-                          <path
-                            d="M5 12L9 16"
-                            stroke="#27442f"
-                            strokeWidth="2.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeDasharray="100"
-                            strokeDashoffset="0"
-                          />
-                          {/* Second stroke of the checkmark - overlapping */}
-                          <path
-                            d="M8.5 16L19 5"
-                            stroke="#27442f"
-                            strokeWidth="2.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeDasharray="100"
-                            strokeDashoffset="0"
-                          />
-                        </svg>
-                      )}
-                    </label>
-                  </div>
+          {/* Today's Activities Section */}
+          {!hasCheckedInToday && !activitiesExhausted && todayActivities.length > 0 && (
+            <div className="mb-8 max-w-4xl mx-auto">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 shadow-sm">
+                <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                  <span className="material-symbols-outlined">task_alt</span>
+                  Today's Activities
+                </h3>
+                <div className="space-y-3">
+                  {todayActivities.map((activity, index) => {
+                    const isCompleted = completedActivities.includes(index);
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                          isCompleted
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => toggleActivityCompletion(index)}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          isCompleted
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {isCompleted && (
+                            <CheckmarkSVG size={12} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${
+                            isCompleted ? 'text-green-800 line-through' : 'text-on-surface'
+                          }`}>
+                            {activity.title || 'Activity'}
+                          </p>
+                          {activity.subtitle && (
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              {activity.subtitle}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-primary">
+                          {activity.time || ''}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {/* Sleep Quality Slider */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-                      <span className="material-symbols-outlined">bedtime</span> Sleep Quality
-                    </h3>
-                    <span className="font-label-caps text-label-caps text-on-surface-variant bg-surface px-2 py-1 rounded shadow-sm">REST</span>
-                  </div>
-                  <div className="px-2 pt-4">
-                    <input 
-                      className="w-full drop-shadow-sm" 
-                      max="5" 
-                      min="1" 
-                      type="range" 
-                      value={sleepQuality}
-                      onChange={(e) => setSleepQuality(parseInt(e.target.value))}
-                    />
-                    <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-3 px-1">
-                      <span>Poor</span>
-                      <span>Fair</span>
-                      <span>Good</span>
-                      <span>Great</span>
-                      <span>Excellent</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mood Slider */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-                      <span className="material-symbols-outlined">mood</span> Mood
-                    </h3>
-                    <span className="font-label-caps text-label-caps text-on-surface-variant bg-surface px-2 py-1 rounded shadow-sm">FEELING</span>
-                  </div>
-                  <div className="px-2 pt-4">
-                    <input 
-                      className="w-full drop-shadow-sm" 
-                      max="5" 
-                      min="1" 
-                      type="range" 
-                      value={mood}
-                      onChange={(e) => setMood(parseInt(e.target.value))}
-                    />
-                    <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-3 px-1">
-                      <span>Low</span>
-                      <span>Okay</span>
-                      <span>Neutral</span>
-                      <span>Good</span>
-                      <span>High</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stress Level Slider */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-                      <span className="material-symbols-outlined">waves</span> Stress Level
-                    </h3>
-                  </div>
-                  <div className="px-2 pt-4">
-                    <input 
-                      className="w-full drop-shadow-sm" 
-                      max="5" 
-                      min="1" 
-                      type="range" 
-                      value={stressLevel}
-                      onChange={(e) => setStressLevel(parseInt(e.target.value))}
-                    />
-                    <div className="flex justify-between font-label-sm text-label-sm text-on-surface-variant mt-3 px-1">
-                      <span>Calm</span>
-                      <span>Mild</span>
-                      <span>Moderate</span>
-                      <span>High</span>
-                      <span>Overwhelmed</span>
-                    </div>
-                  </div>
+                <div className="mt-4 text-sm text-on-surface-variant">
+                  {completedActivities.length} of {todayActivities.length} completed
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Right Page */}
-            <div className="rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col" style={{ 
-              background: 'rgba(253, 250, 246, 0.75)', 
-              border: '1px solid rgba(255, 255, 255, 0.9)', 
-              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.15), 0 10px 20px -10px rgba(0, 0, 0, 0.1)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)'
-            }}>
-              <div className="flex-grow flex flex-col h-full">
-                {/* Text Area */}
+          <div className="relative w-full max-w-6xl mx-auto z-10">
+            <div className="book-page-under-3" />
+            <div className="book-page-under-2" />
+            <div className="book-page-under-1" />
+            <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gradient-to-b from-black/5 via-black/15 to-black/5 hidden md:block z-20" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0 relative z-10">
+
+              {/* ── Left Page ── */}
+              <div
+                className="rounded-2xl md:rounded-r-none p-6 md:p-10 min-h-[500px]"
+                style={{
+                  background: 'rgba(253, 250, 246, 0.75)',
+                  border: '1px solid rgba(255,255,255,0.9)',
+                  boxShadow: '0 30px 60px -15px rgba(0,0,0,0.15), 0 10px 20px -10px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
+                <div className="space-y-8">
+
+                  {/* Exercise */}
+                  <div className={`${sectionCard} flex items-center justify-between`}>
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-primary text-2xl">fitness_center</span>
+                      <div>
+                        <h3 className="font-headline-md text-headline-md text-primary">Exercise</h3>
+                        <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Did you move your body today?</p>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <input type="checkbox" id="exercise-checkbox" className="exercise-checkbox sr-only"
+                        checked={exerciseChecked} onChange={(e) => setExerciseChecked(e.target.checked)} disabled={hasCheckedInToday} />
+                      <label htmlFor="exercise-checkbox"
+                        className="flex items-center justify-center w-8 h-8 border-2 border-primary rounded-lg cursor-pointer bg-white/50 backdrop-blur-sm">
+                        {exerciseChecked && <CheckmarkSVG size={20} />}
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Sleep Quality */}
+                  <div className={sectionCard}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="material-symbols-outlined text-primary text-2xl">bedtime</span>
+                      <h3 className="font-headline-md text-headline-md text-primary">Sleep Quality</h3>
+                    </div>
+                    <div className="grid grid-cols-5 gap-3">
+                      {[
+                        { key: 'restless', label: 'Restless' },
+                        { key: 'poor',     label: 'Poor'     },
+                        { key: 'neutral',  label: 'Neutral'  },
+                        { key: 'good',     label: 'Good'     },
+                        { key: 'excellent',label: 'Excellent'},
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col items-center gap-2">
+                          <input type="checkbox" id={`sleep-${key}`} className="sleep-checkbox sr-only"
+                            checked={sleepQuality[key]}
+                            onChange={() => selectSingle(setSleepQuality, key)} disabled={hasCheckedInToday} />
+                          <label htmlFor={`sleep-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
+                            <div className={checkboxBase}>
+                              {sleepQuality[key] && <CheckmarkSVG size={14} />}
+                            </div>
+                            <span className="text-xs text-on-surface-variant text-center font-medium">{label}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mood */}
+                  <div className={sectionCard}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="material-symbols-outlined text-primary text-2xl">mood</span>
+                      <h3 className="font-headline-md text-headline-md text-primary">Mood</h3>
+                    </div>
+                    <div className="grid grid-cols-5 gap-3">
+                      {[
+                        { key: 'sad',      label: 'Sad'      },
+                        { key: 'anxious',  label: 'Anxious'  },
+                        { key: 'neutral',  label: 'Neutral'  },
+                        { key: 'positive', label: 'Positive' },
+                        { key: 'happy',    label: 'Happy'    },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col items-center gap-2">
+                          <input type="checkbox" id={`mood-${key}`} className="mood-checkbox sr-only"
+                            checked={mood[key]}
+                            onChange={() => selectSingle(setMood, key)} disabled={hasCheckedInToday} />
+                          <label htmlFor={`mood-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
+                            <div className={checkboxBase}>
+                              {mood[key] && <CheckmarkSVG size={14} />}
+                            </div>
+                            <span className="text-xs text-on-surface-variant text-center font-medium">{label}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stress Level */}
+                  <div className={sectionCard}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="material-symbols-outlined text-primary text-2xl">waves</span>
+                      <h3 className="font-headline-md text-headline-md text-primary">Stress Level</h3>
+                    </div>
+                    <div className="grid grid-cols-5 gap-3">
+                      {[
+                        { key: 'overwhelmed', label: 'Overwhelmed' },
+                        { key: 'moderate',    label: 'Moderate'    },
+                        { key: 'neutral',     label: 'Neutral'     },
+                        { key: 'tense',       label: 'Tense'       },
+                        { key: 'calm',        label: 'Calm'        },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col items-center gap-2">
+                          <input type="checkbox" id={`stress-${key}`} className="stress-checkbox sr-only"
+                            checked={stressLevel[key]}
+                            onChange={() => selectSingle(setStressLevel, key)} disabled={hasCheckedInToday} />
+                          <label htmlFor={`stress-${key}`} className="flex flex-col items-center gap-1 cursor-pointer select-none p-2 rounded-lg">
+                            <div className={checkboxBase}>
+                              {stressLevel[key] && <CheckmarkSVG size={14} />}
+                            </div>
+                            <span className="text-xs text-on-surface-variant text-center font-medium">{label}</span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* ── Right Page ── */}
+              <div
+                className="rounded-2xl md:rounded-l-none p-6 md:p-10 min-h-[500px] flex flex-col"
+                style={{
+                  background: 'rgba(253, 250, 246, 0.75)',
+                  border: '1px solid rgba(255,255,255,0.9)',
+                  boxShadow: '0 30px 60px -15px rgba(0,0,0,0.15), 0 10px 20px -10px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                }}
+              >
                 <div className="flex-grow flex flex-col h-full">
                   <div className="flex justify-between items-end mb-4">
                     <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-                      <span className="material-symbols-outlined">edit_note</span> Wins
+                      <span className="material-symbols-outlined">edit_note</span> Reflection
                     </h3>
                   </div>
-                  <div className="glass-input rounded-xl flex-grow h-full p-1 relative shadow-inner" style={{ background: 'linear-gradient(180deg, rgba(246, 243, 239, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)', border: '0.5px solid rgba(114, 121, 114, 0.2)' }}>
-                    <textarea 
-                      className="w-full h-full bg-transparent border-none resize-none p-4 text-on-surface focus:ring-0 placeholder:text-outline-variant/70 handwritten-text" 
-                      placeholder="Any wins today? Big or small, write them down..."
+                  <div
+                    className="glass-input rounded-xl flex-grow h-full p-1 relative shadow-inner"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(246,243,239,0.5) 0%, rgba(255,255,255,0.8) 100%)',
+                      border: '0.5px solid rgba(114,121,114,0.2)',
+                    }}
+                  >
+                    <textarea
+                      className="w-full h-full bg-transparent border-none resize-none p-4 text-on-surface focus:ring-0 placeholder:text-outline-variant/70 handwritten-text"
+                      placeholder="Write a short reflection about your day..."
                       value={winsText}
                       onChange={(e) => setWinsText(e.target.value)}
+                      disabled={hasCheckedInToday}
                     />
                   </div>
                 </div>
+
+                <div className="mt-10 flex justify-end">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={
+                      isSubmitting || hasCheckedInToday || !winsText.trim() ||
+                      !Object.values(sleepQuality).some(v => v) ||
+                      !Object.values(mood).some(v => v) ||
+                      !Object.values(stressLevel).some(v => v) ||
+                      !timelineComplete
+                    }
+                    className={`font-['Manrope'] font-normal text-base leading-6 px-8 py-4 rounded-full flex items-center gap-2 transition-all duration-300 ${
+                      !isSubmitting && winsText.trim() &&
+                      Object.values(sleepQuality).some(v => v) &&
+                      Object.values(mood).some(v => v) &&
+                      Object.values(stressLevel).some(v => v) &&
+                      timelineComplete
+                        ? "bg-primary text-on-primary hover:bg-primary-fixed-variant shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    {isSubmitting ? "Saving…" : 
+                      !timelineComplete
+                        ? "Complete Timeline First"
+                        : "Submit Entry"
+                    }
+                    <span className="material-symbols-outlined text-[18px]">
+                      {isSubmitting ? "hourglass_empty" : 
+                        !timelineComplete
+                          ? "block"
+                          : "arrow_forward"
+                      }
+                    </span>
+                  </button>
+                </div>
               </div>
-              <div className="mt-10 flex justify-end">
-                <button 
-                  onClick={handleSubmit}
-                  className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal px-8 py-4 rounded-full flex items-center gap-2 hover:bg-primary-fixed-variant transition-colors shadow-[0_10px_20px_rgba(39,68,47,0.3)] hover:shadow-[0_15px_30px_rgba(39,68,47,0.4)] hover:-translate-y-1 duration-300"
-                >
-                  Submit Entry
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </button>
-              </div>
+
             </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <BottomNav activePage="checkin" onNavigate={navigate} />
+        <BottomNav activePage="checkin" onNavigate={navigate} />
       </div>
     </>
   );

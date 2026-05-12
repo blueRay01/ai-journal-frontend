@@ -12,10 +12,13 @@ import HistoryPage from "./pages/HistoryPage";
 import ReportPage from "./pages/ReportPage";
 import CheckInPage from "./pages/CheckInPage";
 import AIInsightPage from "./pages/AIInsightPage";
+import AccountPage from "./pages/AccountPage";
+import { useAuth } from "./contexts/AuthContext";
+import { useEffect } from "react";
 
 function LandingPage() {
   return (
-    <div className="bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-200 font-body relative overflow-x-hidden min-h-screen">
+    <LandingPageWrapper>
       <div className="texture-overlay bg-paper-texture" />
       <div className="fixed inset-0 bg-aura-gradient dark:bg-aura-gradient-dark pointer-events-none -z-10" />
 
@@ -27,6 +30,26 @@ function LandingPage() {
       </main>
 
       <Footer />
+    </LandingPageWrapper>
+  );
+}
+
+function LandingPageWrapper({ children }) {
+  const { isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.href = "/dashboard";
+    }
+  }, [isAuthenticated]);
+
+  if (isAuthenticated) {
+    return null; // Don't render anything while redirecting
+  }
+
+  return (
+    <div className="bg-background-light dark:bg-background-dark text-stone-900 dark:text-stone-200 font-body relative overflow-x-hidden min-h-screen">
+      {children}
     </div>
   );
 }
@@ -38,45 +61,53 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/history" 
+          <Route
+            path="/history"
             element={
               <ProtectedRoute>
                 <HistoryPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/report" 
+          <Route
+            path="/report"
             element={
               <ProtectedRoute>
                 <ReportPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/checkin" 
+          <Route
+            path="/checkin"
             element={
               <ProtectedRoute>
                 <CheckInPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/insights" 
+          <Route
+            path="/insights"
             element={
               <ProtectedRoute>
                 <AIInsightPage />
               </ProtectedRoute>
-            } 
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <AccountPage />
+              </ProtectedRoute>
+            }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

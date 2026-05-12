@@ -1,92 +1,191 @@
-// src/pages/DashboardPage.jsx
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
+import { useAuth } from "../contexts/AuthContext";
 import StreakCard from "../components/dashboard/StreakCard";
 import EnergyFlowCard from "../components/dashboard/EnergyFlowCard";
-import RecentEntryCard from "../components/dashboard/RecentEntryCard";
+import ActiveFocusCard from "../components/dashboard/ActiveFocusCard";
+import ResonanceTrackerCard from "../components/dashboard/ResonanceTrackerCard";
+import TimelineProgressionCard from "../components/dashboard/TimelineProgressionCard";
 import BottomNav from "../components/layout/BottomNav";
-
-const RECENT_ENTRIES = [
-  {
-    date: "Yesterday",
-    mood: "Peaceful",
-    icon: "self_improvement",
-    iconBg: "bg-primary-container/20",
-    iconColor: "text-primary",
-  },
-  {
-    date: "Oct 24",
-    mood: "Focused",
-    icon: "psychology",
-    iconBg: "bg-secondary-container/30",
-    iconColor: "text-secondary",
-  },
-];
+import DashboardHeader from "../components/layout/DashboardHeader";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [timeline, setTimeline] = useState([]);
+  const [entryDate, setEntryDate] = useState(null);
+  const [resonancePct, setResonancePct] = useState(0);
+  const [activeFocus, setActiveFocus] = useState(null);
+  const [userNickname, setUserNickname] = useState("");
+  const [greeting, setGreeting] = useState("Good Morning");
+  const [showTomorrowPlanToday, setShowTomorrowPlanToday] = useState(false);
+  const [isFirstDay, setIsFirstDay] = useState(true);
+  const [streakBroken, setStreakBroken] = useState(false);
+  const [isTimelineComplete, setIsTimelineComplete] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUserData = async () => {
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserNickname(userData.nickname || "");
+        }
+      } catch (err) {
+        console.error("Failed to load user data:", err);
+      }
+    };
+    
+    const fetchLatestTimeline = async () => {
+      try {
+        const q = query(
+          collection(db, "journalEntries"),
+          where("userId", "==", user.uid),
+          orderBy("createdAt", "desc"),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) return;
+        const data = snap.docs[0].data();
+        if (data.tomorrowTimeline) setTimeline(data.tomorrowTimeline);
+        if (data.createdAt?.toDate) setEntryDate(data.createdAt.toDate());
+      } catch (err) {
+        console.error("Failed to load timeline:", err);
+      }
+    };
+    
+    fetchUserData();
+    fetchLatestTimeline();
+    checkTomorrowPlanDisplay();
+  }, [user]);
+  
+  const checkTomorrowPlanDisplay = async () => {
+    if (!user) return;
+    
+    try {
+      const entriesRef = collection(db, "journalEntries");
+      const allEntriesQuery = query(entriesRef, where("userId", "==", user.uid), orderBy("createdAt", "asc"));
+      const allEntriesSnapshot = await getDocs(allEntriesQuery);
+      const allEntries = allEntriesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      }));
+      
+      // Check if it's the first day or if streak is broken
+      if (allEntries.length <= 1) {
+        setShowTomorrowPlanToday(true); // First day, show tomorrow's plan today
+        setIsFirstDay(true);
+        setStreakBroken(false);
+      } else {
+        setIsFirstDay(false);
+        // Check for broken streak
+        let broken = false;
+        for (let i = 1; i < allEntries.length; i++) {
+          const currentDate = new Date(allEntries[i].createdAt);
+          const previousDate = new Date(allEntries[i-1].createdAt);
+          
+          currentDate.setHours(0, 0, 0, 0);
+          previousDate.setHours(0, 0, 0, 0);
+          
+          const diffTime = currentDate - previousDate;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 1) {
+            broken = true;
+            break;
+          }
+        }
+        
+        setStreakBroken(broken);
+        setShowTomorrowPlanToday(broken);
+      }
+    } catch (error) {
+      console.error("Error checking tomorrow plan display:", error);
+    }
+  };
+
+  const handleTimelineComplete = (isComplete) => {
+    setIsTimelineComplete(isComplete);
+    // Store in localStorage so CheckInPage can access it
+    localStorage.setItem('timelineComplete', isComplete.toString());
+  };
+  
+  useEffect(() => {
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) {
+        setGreeting("Good Morning");
+      } else if (hour < 17) {
+        setGreeting("Good Afternoon");
+      } else {
+        setGreeting("Good Evening");
+      }
+    };
+    
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="text-on-surface font-body-md min-h-screen relative overflow-x-hidden pb-[120px]">
+    <div
+      className="min-h-screen relative overflow-x-hidden pb-[120px]"
+      style={{ background: "linear-gradient(160deg, rgb(238, 244, 232) 0%, rgb(255, 255, 255) 50%, rgb(245, 245, 239) 100%)" }}
+    >
+      <div className="absolute top-0 left-[calc(50%-600px)] w-[1200px] h-[500px] z-0 bg-[#d7e8c7] rounded-full blur-[80px] opacity-50 pointer-events-none" />
+      <div className="absolute w-[50%] h-[50%] top-[60%] left-[-20%] z-0 bg-[#e7deff] rounded-full blur-[60px] opacity-15 pointer-events-none" />
+      <div className="absolute w-[60%] h-[60%] top-[-20%] left-[50%] z-0 bg-[#c9ebcd] rounded-full blur-[60px] opacity-25 pointer-events-none" />
 
-      {/* Ambient gradients — mirrors the HTML prototype */}
-      <div className="aura-top-right" />
-      <div className="aura-bottom-left" />
+      <DashboardHeader />
 
-      {/* Top App Bar — Desktop */}
-      <header className="hidden md:flex justify-between items-center w-full px-8 py-6 bg-transparent text-primary font-label-caps tracking-widest uppercase text-xs z-40 relative">
-        <div className="text-xl font-bold tracking-tight text-primary">Aura Journal</div>
-        <div className="flex gap-4 text-primary">
-          <button className="hover:opacity-70 transition-opacity duration-300">
-            <span className="material-symbols-outlined">account_circle</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Top App Bar — Mobile */}
-      <header className="flex md:hidden justify-between items-center w-full px-8 py-6 bg-transparent text-primary z-40 relative">
-        <div className="text-xl font-bold tracking-tight font-display">Aura Journal</div>
-        <div className="flex gap-4">
-          <button className="hover:opacity-70 transition-opacity duration-300">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-          <button className="hover:opacity-70 transition-opacity duration-300">
-            <span className="material-symbols-outlined">account_circle</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-[1280px] mx-auto px-4 md:px-12 py-8 flex flex-col gap-6">
-
-        {/* Greeting */}
-        <div className="mb-4">
-          <h1 className="font-display text-[48px] font-light leading-tight tracking-tight text-primary">
-            Good Morning, Klydel Asino.
+      <main className="relative z-10 max-w-[960px] mx-auto px-4 md:px-8 pt-[88px] pb-8 flex flex-col gap-6">
+        <div className="mb-2">
+          <h1 className="font-display text-[42px] md:text-[52px] font-light leading-tight tracking-tight text-[#2a3a2a]">
+            {greeting}{userNickname ? `, ${userNickname}` : ""}.
           </h1>
-          <p className="text-[18px] text-on-surface-variant mt-2 leading-relaxed">
+          <p className="text-[16px] text-[#6a7a6a] mt-2 leading-relaxed">
             Take a moment to center yourself today.
           </p>
         </div>
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-          <StreakCard />
-          <EnergyFlowCard />
-
-          {/* Primary CTA */}
-          <div className="md:col-span-12 flex justify-center py-4">
-            <button 
-            onClick={() => navigate('/checkin')}
-            className="bg-primary text-on-primary font-['Manrope'] font-normal text-base leading-6 tracking-normal px-8 py-4 rounded-full hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-lg">add</span>
-            Check in today
-          </button>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+          <div className="md:col-span-7 flex flex-col gap-4">
+            <EnergyFlowCard />
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-4"><StreakCard /></div>
+              <div className="col-span-8"><ActiveFocusCard title={activeFocus?.title ?? null}
+  subtitle={activeFocus?.subtitle ?? null}/></div>
+            </div>
+            <ResonanceTrackerCard goalPct={resonancePct}/>
+            <button
+              onClick={() => {
+                navigate("/checkin");
+              }}
+              disabled={!isTimelineComplete}
+              className={`w-full text-sm font-medium py-4 rounded-xl transition-all shadow-[0_4px_20px_rgba(47,74,53,0.25)] flex items-center justify-center gap-2 ${
+                isTimelineComplete 
+                  ? "bg-[#2f4a35] text-white hover:bg-[#253d2a]" 
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">
+                {isTimelineComplete ? "add" : "block"}
+              </span>
+              Check in today
+            </button>
           </div>
 
-          {/* Recent entries */}
-          {RECENT_ENTRIES.map((entry) => (
-            <RecentEntryCard key={entry.date} {...entry} />
-          ))}
+          <div className="md:col-span-5">
+            <TimelineProgressionCard timeline={timeline} entryDate={entryDate} onProgressChange={setResonancePct} onActiveFocusChange={setActiveFocus} onTimelineComplete={handleTimelineComplete} showTomorrowPlanToday={showTomorrowPlanToday} isFirstDay={isFirstDay} streakBroken={streakBroken}/>
+          </div>
         </div>
       </main>
 
